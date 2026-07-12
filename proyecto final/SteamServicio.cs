@@ -85,30 +85,62 @@ namespace Steam
 
         // ---------- Personal: biblioteca de juegos (requiere credenciales) ----------
 
-        public async Task<string> MiBibliotecaAsync()
+        // Descarga la biblioteca como lista de objetos (reutilizado por ver y guardar).
+        public async Task<List<JuegoSteam>> ObtenerBibliotecaAsync()
         {
             string url = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/" +
                          $"?key={ApiKey}&steamid={SteamId}&include_appinfo=1" +
                          "&include_played_free_games=1&format=json";
             using JsonDocument doc = await ObtenerJsonAsync(url);
 
+            List<JuegoSteam> lista = new List<JuegoSteam>();
             JsonElement response = doc.RootElement.GetProperty("response");
             if (!response.TryGetProperty("games", out JsonElement juegos))
-                return "No se pudo leer la biblioteca. Revisa que el perfil sea publico y que la clave/SteamID sean correctos.";
+                return lista; // vacia: perfil privado, sin juegos o credenciales incorrectas
 
-            int total = response.TryGetProperty("game_count", out JsonElement gc) ? gc.GetInt32() : 0;
-
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"Juegos en tu cuenta: {total}\n");
-            int n = 1;
             foreach (JsonElement j in juegos.EnumerateArray())
             {
+                int appId = j.TryGetProperty("appid", out JsonElement a) ? a.GetInt32() : 0;
                 string nombre = Texto(j, "name", "?");
                 int minutos = j.TryGetProperty("playtime_forever", out JsonElement pt) ? pt.GetInt32() : 0;
-                sb.AppendLine($"{n,3}. {nombre}  ({minutos / 60} h jugadas)");
+                lista.Add(new JuegoSteam(appId, nombre, minutos));
+            }
+            return lista;
+        }
+
+        public async Task<string> MiBibliotecaAsync()
+        {
+            List<JuegoSteam> lista = await ObtenerBibliotecaAsync();
+            if (lista.Count == 0)
+                return "No se pudo leer la biblioteca. Revisa que el perfil sea publico y que la clave/SteamID sean correctos.";
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Juegos en tu cuenta: {lista.Count}\n");
+            int n = 1;
+            foreach (JuegoSteam j in lista)
+            {
+                sb.AppendLine($"{n,3}. {j.Nombre}  ({j.HorasJugadas} h jugadas)");
                 n++;
             }
             return sb.ToString();
+        }
+
+        // Guarda la biblioteca en un archivo CSV (se abre en Excel/LibreOffice).
+        // Devuelve la cantidad de juegos guardados.
+        public async Task<int> GuardarBibliotecaAsync(string ruta)
+        {
+            List<JuegoSteam> lista = await ObtenerBibliotecaAsync();
+
+            List<string> lineas = new List<string> { "AppID,Nombre,HorasJugadas" };
+            foreach (JuegoSteam j in lista)
+            {
+                // Comillas dobles para nombres con comas; se escapan segun formato CSV.
+                string nombre = "\"" + j.Nombre.Replace("\"", "\"\"") + "\"";
+                lineas.Add($"{j.AppId},{nombre},{j.HorasJugadas}");
+            }
+
+            File.WriteAllLines(ruta, lineas);
+            return lista.Count;
         }
 
         // ---------- Personal: perfil (requiere credenciales) ----------

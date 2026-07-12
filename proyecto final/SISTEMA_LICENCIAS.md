@@ -31,6 +31,8 @@ para **leer** información real (nunca activa ni genera juegos):
 
 - **Pública (sin credenciales):** info, precio y descripción de cualquier juego de la
   tienda por su AppID (ej: `220` = Half-Life 2).
+- **Guardar biblioteca:** exporta tu biblioteca a `biblioteca_steam.csv` (AppID, nombre,
+  horas jugadas), que se abre en Excel/LibreOffice. También queda fuera del repositorio.
 - **Personal (con tu cuenta):** tu biblioteca de juegos y tu perfil. Requiere:
   - una **API key** gratuita: https://steamcommunity.com/dev/apikey
   - tu **SteamID64** (17 dígitos).

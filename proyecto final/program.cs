@@ -143,6 +143,25 @@ namespace Steam
             }
         }
 
+        public static async Task GuardarBiblioteca(SteamServicio steam)
+        {
+            if (!AsegurarCredenciales(steam)) return;
+            const string ruta = "biblioteca_steam.csv";
+            Console.WriteLine("\n===== GUARDAR BIBLIOTECA (Steam) =====");
+            try
+            {
+                int cantidad = await steam.GuardarBibliotecaAsync(ruta);
+                if (cantidad == 0)
+                    Console.WriteLine("No se guardaron juegos (perfil privado o credenciales incorrectas).");
+                else
+                    Console.WriteLine($"Guardados {cantidad} juegos en '{ruta}'.");
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine("No se pudo conectar con Steam: " + ex.Message);
+            }
+        }
+
         public static async Task MiPerfil(SteamServicio steam)
         {
             if (!AsegurarCredenciales(steam)) return;
@@ -174,10 +193,11 @@ namespace Steam
                 Console.WriteLine("3. Listar licencias");
                 Console.WriteLine("4. Revocar licencia");
                 Console.WriteLine("--- Steam (API oficial) ---");
-                Console.WriteLine("5. Ver info y precio de un juego  (publico)");
-                Console.WriteLine("6. Ver mi biblioteca de juegos    (mi cuenta)");
-                Console.WriteLine("7. Ver mi perfil de Steam         (mi cuenta)");
-                Console.WriteLine("8. Salir");
+                Console.WriteLine("5. Ver info y precio de un juego     (publico)");
+                Console.WriteLine("6. Ver mi biblioteca de juegos       (mi cuenta)");
+                Console.WriteLine("7. Guardar mi biblioteca en archivo  (mi cuenta)");
+                Console.WriteLine("8. Ver mi perfil de Steam            (mi cuenta)");
+                Console.WriteLine("9. Salir");
                 Console.Write("Seleccione opcion: ");
 
                 if (int.TryParse(Console.ReadLine(), out opcion))
@@ -190,12 +210,13 @@ namespace Steam
                         case 4: RevocarLicencia(licencias); break;
                         case 5: await InfoJuego(steam); break;
                         case 6: await MiBiblioteca(steam); break;
-                        case 7: await MiPerfil(steam); break;
-                        case 8: Console.WriteLine("Cerrando el sistema..."); break;
+                        case 7: await GuardarBiblioteca(steam); break;
+                        case 8: await MiPerfil(steam); break;
+                        case 9: Console.WriteLine("Cerrando el sistema..."); break;
                         default: Console.WriteLine("Opcion no valida."); break;
                     }
                 }
-            } while (opcion != 8);
+            } while (opcion != 9);
         }
     }
 }
