@@ -117,11 +117,14 @@ namespace Steam
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"Juegos en tu cuenta: {lista.Count}\n");
             int n = 1;
+            int totalHoras = 0;
             foreach (JuegoSteam j in lista)
             {
                 sb.AppendLine($"{n,3}. {j.Nombre}  ({j.HorasJugadas} h jugadas)");
+                totalHoras += j.HorasJugadas;
                 n++;
             }
+            sb.AppendLine($"\nTotal jugado: {totalHoras} horas.");
             return sb.ToString();
         }
 

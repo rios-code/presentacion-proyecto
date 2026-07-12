@@ -208,6 +208,40 @@ namespace Steam
             return true;
         }
 
+        // ---------- Exportacion ----------
+
+        // Exporta todas las licencias emitidas a un CSV (se abre en Excel/LibreOffice).
+        public int ExportarCsv(string ruta)
+        {
+            List<Licencia> lista = LeerTodas();
+
+            List<string> lineas = new List<string>
+            {
+                "Clave,Producto,Cliente,FechaEmision,FechaExpiracion,Estado"
+            };
+            foreach (Licencia l in lista)
+            {
+                string vence = l.EsPermanente ? "PERMANENTE" : l.FechaExpiracion.ToString("yyyy-MM-dd");
+                string estado = !l.Activa ? "REVOCADA" : (l.EstaVigente() ? "VIGENTE" : "VENCIDA");
+                lineas.Add(string.Join(",",
+                    Csv(l.Clave),
+                    Csv(l.Producto),
+                    Csv(l.Cliente),
+                    l.FechaEmision.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                    vence,
+                    estado));
+            }
+
+            File.WriteAllLines(ruta, lineas);
+            return lista.Count;
+        }
+
+        // Envuelve un valor entre comillas y escapa las internas (formato CSV).
+        private static string Csv(string s)
+        {
+            return "\"" + s.Replace("\"", "\"\"") + "\"";
+        }
+
         // ---------- Auxiliares ----------
 
         private static string Serializar(Licencia l)

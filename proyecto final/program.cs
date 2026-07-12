@@ -98,6 +98,16 @@ namespace Steam
                 Console.WriteLine("No se encontro una licencia activa con esa clave.");
         }
 
+        public static void ExportarLicencias(LicenciaServicio servicio)
+        {
+            const string ruta = "licencias.csv";
+            int cantidad = servicio.ExportarCsv(ruta);
+            if (cantidad == 0)
+                Console.WriteLine("No hay licencias para exportar.");
+            else
+                Console.WriteLine($"Exportadas {cantidad} licencias a '{ruta}'.");
+        }
+
         // ========== STEAM (API oficial) ==========
 
         public static async Task InfoJuego(SteamServicio steam)
@@ -192,12 +202,13 @@ namespace Steam
                 Console.WriteLine("2. Validar licencia");
                 Console.WriteLine("3. Listar licencias");
                 Console.WriteLine("4. Revocar licencia");
+                Console.WriteLine("5. Exportar licencias a CSV");
                 Console.WriteLine("--- Steam (API oficial) ---");
-                Console.WriteLine("5. Ver info y precio de un juego     (publico)");
-                Console.WriteLine("6. Ver mi biblioteca de juegos       (mi cuenta)");
-                Console.WriteLine("7. Guardar mi biblioteca en archivo  (mi cuenta)");
-                Console.WriteLine("8. Ver mi perfil de Steam            (mi cuenta)");
-                Console.WriteLine("9. Salir");
+                Console.WriteLine("6. Ver info y precio de un juego     (publico)");
+                Console.WriteLine("7. Ver mi biblioteca de juegos       (mi cuenta)");
+                Console.WriteLine("8. Guardar mi biblioteca en archivo  (mi cuenta)");
+                Console.WriteLine("9. Ver mi perfil de Steam            (mi cuenta)");
+                Console.WriteLine("10. Salir");
                 Console.Write("Seleccione opcion: ");
 
                 if (int.TryParse(Console.ReadLine(), out opcion))
@@ -208,15 +219,16 @@ namespace Steam
                         case 2: ValidarLicencia(licencias); break;
                         case 3: ListarLicencias(licencias); break;
                         case 4: RevocarLicencia(licencias); break;
-                        case 5: await InfoJuego(steam); break;
-                        case 6: await MiBiblioteca(steam); break;
-                        case 7: await GuardarBiblioteca(steam); break;
-                        case 8: await MiPerfil(steam); break;
-                        case 9: Console.WriteLine("Cerrando el sistema..."); break;
+                        case 5: ExportarLicencias(licencias); break;
+                        case 6: await InfoJuego(steam); break;
+                        case 7: await MiBiblioteca(steam); break;
+                        case 8: await GuardarBiblioteca(steam); break;
+                        case 9: await MiPerfil(steam); break;
+                        case 10: Console.WriteLine("Cerrando el sistema..."); break;
                         default: Console.WriteLine("Opcion no valida."); break;
                     }
                 }
-            } while (opcion != 9);
+            } while (opcion != 10);
         }
     }
 }

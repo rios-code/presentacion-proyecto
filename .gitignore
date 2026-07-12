@@ -371,3 +371,4 @@ tarjetas.txt
 # Credenciales de Steam (API key + SteamID) - NUNCA subir al repo
 steam_config.txt
 biblioteca_steam.csv
+licencias.csv

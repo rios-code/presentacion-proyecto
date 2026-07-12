@@ -45,7 +45,10 @@ para **leer** información real (nunca activa ni genera juegos):
 2. **Validar** una licencia (verifica firma, vencimiento y revocación).
 3. **Listar** licencias emitidas.
 4. **Revocar** una licencia.
-5. Salir.
+5. **Exportar** licencias a `licencias.csv` (clave, producto, cliente, fechas, estado).
+
+(El menú completo suma las opciones de Steam: info de juego, ver/guardar biblioteca
+—con total de horas jugadas— y ver perfil.)
 
 ## Cómo se forma la clave
 
