@@ -1,16 +1,16 @@
-﻿
 using System;
 using System.Collections.Generic;
 
-namespace Sube
+namespace Steam
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            Operacion();
+            Operar();
         }
 
+        // ---------- Lectura de datos por consola ----------
 
         public static string LeerTexto(string mensaje)
         {
@@ -20,102 +20,96 @@ namespace Sube
                 Console.Write(mensaje);
                 valor = Console.ReadLine() ?? "";
             } while (string.IsNullOrWhiteSpace(valor));
-            return valor;
+            return valor.Trim();
         }
 
-        public static decimal LeerDecimalPositivo(string mensaje)
+        public static int LeerEnteroNoNegativo(string mensaje)
         {
-            decimal valor;
+            int valor;
             do
             {
                 Console.Write(mensaje);
-            } while (!decimal.TryParse(Console.ReadLine(), out valor) || valor <= 0);
+            } while (!int.TryParse(Console.ReadLine(), out valor) || valor < 0);
             return valor;
         }
 
+        // ---------- Opciones del menu ----------
 
-        public static void EmitirTarjeta(TarjetaServicio servicio)
+        public static void GenerarLicencia(LicenciaServicio servicio)
         {
-            string id;
-            do
-            {
-                id = LeerTexto("ID de la tarjeta: ");
-                if (servicio.ExisteId(id))
-                    Console.WriteLine("Ese ID ya existe. Ingrese otro.");
-            } while (servicio.ExisteId(id));
+            string producto = LeerTexto("Juego / producto de Steam: ");
+            string cliente = LeerTexto("Cliente (nombre o cuenta): ");
+            int dias = LeerEnteroNoNegativo("Dias de validez (0 = permanente): ");
 
-            string pasajero = LeerTexto("Nombre del pasajero: ");
-            decimal saldo = LeerDecimalPositivo("Saldo inicial: ");
+            Licencia lic = servicio.Emitir(producto, cliente, dias);
 
-            Tarjeta nueva = new Tarjeta(id, pasajero, saldo);
-            servicio.Guardar(nueva);
-            Console.WriteLine("Tarjeta emitida correctamente.");
+            Console.WriteLine("\n===== LICENCIA GENERADA Y FIRMADA =====");
+            Console.WriteLine(lic.ToString());
+            Console.WriteLine("\nEntregue esta clave al cliente. Se valida sin conexion.");
         }
 
-
-        public static void VerSaldo(TarjetaServicio servicio)
+        public static void ValidarLicencia(LicenciaServicio servicio)
         {
-            string id = LeerTexto("ID de la tarjeta: ");
-            Tarjeta? t = servicio.Buscar(id);
-            if (t == null)
-            {
-                Console.WriteLine("No se encontro esa tarjeta.");
-                return;
-            }
-            Console.WriteLine("\n===== DATOS DE LA TARJETA =====");
-            Console.WriteLine(t.ToString());
-        }
+            string clave = LeerTexto("Ingrese la clave a validar: ");
+            ResultadoValidacion r = servicio.Validar(clave);
 
-
-        public static void RegistrarViaje(TarjetaServicio servicio)
-        {
-            string id = LeerTexto("ID de la tarjeta: ");
-            Tarjeta? t = servicio.Buscar(id);
-            if (t == null)
+            Console.WriteLine("\n===== RESULTADO =====");
+            if (r.Valida)
             {
-                Console.WriteLine("No se encontro esa tarjeta.");
-                return;
-            }
-            if (t.PagarViaje())
-            {
-                servicio.Actualizar(t);
-                Console.WriteLine($"Viaje registrado. Saldo restante: ${t.Saldo}");
+                Console.WriteLine("[OK] " + r.Mensaje);
+                Console.WriteLine($"     Juego : {r.Producto}");
+                Console.WriteLine($"     Cliente: {r.Cliente}");
+                string vence = r.Expira!.Value.Date >= Licencia.PERMANENTE.Date
+                    ? "Sin vencimiento"
+                    : r.Expira.Value.ToString("yyyy-MM-dd");
+                Console.WriteLine($"     Vence  : {vence}");
             }
             else
             {
-                Console.WriteLine("Saldo insuficiente. El saldo no puede bajar de -$200.");
+                Console.WriteLine("[X] " + r.Mensaje);
             }
         }
 
-
-        public static void RecargarSaldo(TarjetaServicio servicio)
+        public static void ListarLicencias(LicenciaServicio servicio)
         {
-            string id = LeerTexto("ID de la tarjeta: ");
-            Tarjeta? t = servicio.Buscar(id);
-            if (t == null)
+            List<Licencia> lista = servicio.LeerTodas();
+            Console.WriteLine("\n===== LICENCIAS EMITIDAS =====");
+            if (lista.Count == 0)
             {
-                Console.WriteLine("No se encontro esa tarjeta.");
+                Console.WriteLine("(todavia no hay licencias emitidas)");
                 return;
             }
-            decimal monto = LeerDecimalPositivo("Monto a recargar: ");
-            t.CargarSaldo(monto);
-            servicio.Actualizar(t);
-            Console.WriteLine($"Recarga exitosa. Nuevo saldo: ${t.Saldo}");
+            int n = 1;
+            foreach (Licencia lic in lista)
+            {
+                Console.WriteLine($"{n}. {lic}");
+                n++;
+            }
         }
 
-
-        public static void Operacion()
+        public static void RevocarLicencia(LicenciaServicio servicio)
         {
-            TarjetaServicio servicio = new TarjetaServicio();
+            string clave = LeerTexto("Ingrese la clave a revocar: ");
+            if (servicio.Revocar(clave))
+                Console.WriteLine("Licencia revocada. Ya no pasara la validacion.");
+            else
+                Console.WriteLine("No se encontro una licencia activa con esa clave.");
+        }
+
+        // ---------- Bucle principal ----------
+
+        public static void Operar()
+        {
+            LicenciaServicio servicio = new LicenciaServicio();
             int opcion = 0;
 
             do
             {
-                Console.WriteLine("\n===== SISTEMA SUBE =====");
-                Console.WriteLine("1. Emitir nueva tarjeta");
-                Console.WriteLine("2. Ver saldo y estadisticas");
-                Console.WriteLine("3. Registrar viaje en colectivo");
-                Console.WriteLine("4. Recargar dinero en efectivo");
+                Console.WriteLine("\n===== GENERADOR DE LICENCIAS - STEAM =====");
+                Console.WriteLine("1. Generar nueva licencia");
+                Console.WriteLine("2. Validar una licencia");
+                Console.WriteLine("3. Listar licencias emitidas");
+                Console.WriteLine("4. Revocar una licencia");
                 Console.WriteLine("5. Salir");
                 Console.Write("Seleccione opcion: ");
 
@@ -124,16 +118,16 @@ namespace Sube
                     switch (opcion)
                     {
                         case 1:
-                            EmitirTarjeta(servicio);
+                            GenerarLicencia(servicio);
                             break;
                         case 2:
-                            VerSaldo(servicio);
+                            ValidarLicencia(servicio);
                             break;
                         case 3:
-                            RegistrarViaje(servicio);
+                            ListarLicencias(servicio);
                             break;
                         case 4:
-                            RecargarSaldo(servicio);
+                            RevocarLicencia(servicio);
                             break;
                         case 5:
                             Console.WriteLine("Cerrando el sistema...");

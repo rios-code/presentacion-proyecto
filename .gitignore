@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# ===== Sistema de licencias (archivos generados en ejecucion) =====
+# La clave PRIVADA jamas debe subirse al repositorio.
+clave_privada.pem
+clave_publica.pem
+licencias.txt
+tarjetas.txt
