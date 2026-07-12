@@ -367,3 +367,6 @@ clave_privada.pem
 clave_publica.pem
 licencias.txt
 tarjetas.txt
+
+# Credenciales de Steam (API key + SteamID) - NUNCA subir al repo
+steam_config.txt

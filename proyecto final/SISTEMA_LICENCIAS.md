@@ -21,7 +21,21 @@ Sistema de consola en C# que **genera y valida claves de activación** de juegos
 | `LicenciaServicio.cs` | Lógica fuerte: crea/carga las claves, firma, valida, revoca y persiste. |
 | `Base32.cs` | Codifica los bytes firmados como texto legible (A–Z, 2–7). |
 | `ResultadoValidacion.cs` | Resultado de validar: válida/ inválida + motivo + datos. |
+| `SteamServicio.cs` | Cliente de la **API oficial de Steam** (solo lectura). |
 | `program.cs` | Menú de consola. |
+
+## Integración con Steam (API oficial de Valve)
+
+Además de las licencias locales, el proyecto se conecta a la API **oficial** de Steam
+para **leer** información real (nunca activa ni genera juegos):
+
+- **Pública (sin credenciales):** info, precio y descripción de cualquier juego de la
+  tienda por su AppID (ej: `220` = Half-Life 2).
+- **Personal (con tu cuenta):** tu biblioteca de juegos y tu perfil. Requiere:
+  - una **API key** gratuita: https://steamcommunity.com/dev/apikey
+  - tu **SteamID64** (17 dígitos).
+
+  Se ingresan al ejecutar y se guardan en `steam_config.txt`, **excluido del repositorio**.
 
 ## Menú
 

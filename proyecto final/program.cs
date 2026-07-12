@@ -1,13 +1,15 @@
 using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 
 namespace Steam
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            Operar();
+            await Operar();
         }
 
         // ---------- Lectura de datos por consola ----------
@@ -33,7 +35,7 @@ namespace Steam
             return valor;
         }
 
-        // ---------- Opciones del menu ----------
+        // ========== LICENCIAS (local, firma digital) ==========
 
         public static void GenerarLicencia(LicenciaServicio servicio)
         {
@@ -96,48 +98,104 @@ namespace Steam
                 Console.WriteLine("No se encontro una licencia activa con esa clave.");
         }
 
+        // ========== STEAM (API oficial) ==========
+
+        public static async Task InfoJuego(SteamServicio steam)
+        {
+            string appId = LeerTexto("AppID del juego (ej: 220 = Half-Life 2): ");
+            Console.WriteLine("\n===== INFO DEL JUEGO (Steam) =====");
+            try
+            {
+                Console.WriteLine(await steam.InfoJuegoAsync(appId));
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine("No se pudo conectar con Steam: " + ex.Message);
+            }
+        }
+
+        // Pide y guarda credenciales si todavia no estan cargadas.
+        private static bool AsegurarCredenciales(SteamServicio steam)
+        {
+            if (steam.TieneCredenciales) return true;
+
+            Console.WriteLine("\nEsta opcion usa tu cuenta. Necesitas:");
+            Console.WriteLine(" - API key gratuita: https://steamcommunity.com/dev/apikey");
+            Console.WriteLine(" - Tu SteamID64 (17 digitos): https://steamid.io");
+            string key = LeerTexto("API key: ");
+            string id = LeerTexto("SteamID64: ");
+            steam.GuardarConfig(key, id);
+            Console.WriteLine("Credenciales guardadas (steam_config.txt, fuera del repositorio).");
+            return true;
+        }
+
+        public static async Task MiBiblioteca(SteamServicio steam)
+        {
+            if (!AsegurarCredenciales(steam)) return;
+            Console.WriteLine("\n===== MI BIBLIOTECA (Steam) =====");
+            try
+            {
+                Console.WriteLine(await steam.MiBibliotecaAsync());
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine("No se pudo conectar con Steam: " + ex.Message);
+            }
+        }
+
+        public static async Task MiPerfil(SteamServicio steam)
+        {
+            if (!AsegurarCredenciales(steam)) return;
+            Console.WriteLine("\n===== MI PERFIL (Steam) =====");
+            try
+            {
+                Console.WriteLine(await steam.MiPerfilAsync());
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine("No se pudo conectar con Steam: " + ex.Message);
+            }
+        }
+
         // ---------- Bucle principal ----------
 
-        public static void Operar()
+        public static async Task Operar()
         {
-            LicenciaServicio servicio = new LicenciaServicio();
+            LicenciaServicio licencias = new LicenciaServicio();
+            SteamServicio steam = new SteamServicio();
             int opcion = 0;
 
             do
             {
-                Console.WriteLine("\n===== GENERADOR DE LICENCIAS - STEAM =====");
-                Console.WriteLine("1. Generar nueva licencia");
-                Console.WriteLine("2. Validar una licencia");
-                Console.WriteLine("3. Listar licencias emitidas");
-                Console.WriteLine("4. Revocar una licencia");
-                Console.WriteLine("5. Salir");
+                Console.WriteLine("\n===== PLATAFORMA STEAM =====");
+                Console.WriteLine("--- Licencias (local, firma digital) ---");
+                Console.WriteLine("1. Generar licencia");
+                Console.WriteLine("2. Validar licencia");
+                Console.WriteLine("3. Listar licencias");
+                Console.WriteLine("4. Revocar licencia");
+                Console.WriteLine("--- Steam (API oficial) ---");
+                Console.WriteLine("5. Ver info y precio de un juego  (publico)");
+                Console.WriteLine("6. Ver mi biblioteca de juegos    (mi cuenta)");
+                Console.WriteLine("7. Ver mi perfil de Steam         (mi cuenta)");
+                Console.WriteLine("8. Salir");
                 Console.Write("Seleccione opcion: ");
 
                 if (int.TryParse(Console.ReadLine(), out opcion))
                 {
                     switch (opcion)
                     {
-                        case 1:
-                            GenerarLicencia(servicio);
-                            break;
-                        case 2:
-                            ValidarLicencia(servicio);
-                            break;
-                        case 3:
-                            ListarLicencias(servicio);
-                            break;
-                        case 4:
-                            RevocarLicencia(servicio);
-                            break;
-                        case 5:
-                            Console.WriteLine("Cerrando el sistema...");
-                            break;
-                        default:
-                            Console.WriteLine("Opcion no valida.");
-                            break;
+                        case 1: GenerarLicencia(licencias); break;
+                        case 2: ValidarLicencia(licencias); break;
+                        case 3: ListarLicencias(licencias); break;
+                        case 4: RevocarLicencia(licencias); break;
+                        case 5: await InfoJuego(steam); break;
+                        case 6: await MiBiblioteca(steam); break;
+                        case 7: await MiPerfil(steam); break;
+                        case 8: Console.WriteLine("Cerrando el sistema..."); break;
+                        default: Console.WriteLine("Opcion no valida."); break;
                     }
                 }
-            } while (opcion != 5);
+            } while (opcion != 8);
         }
     }
 }
