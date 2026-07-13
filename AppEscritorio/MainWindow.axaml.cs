@@ -4,6 +4,7 @@ using System.Net.Http;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -31,6 +32,9 @@ namespace TiendaJuegos
             LblTituloBiblioteca.Text = "Biblioteca de " + usuario;
             Title = $"MiTienda - {usuario}";
 
+            // La seccion ADMIN solo aparece para la cuenta "admin".
+            NavAdmin.IsVisible = string.Equals(usuario, "admin", StringComparison.OrdinalIgnoreCase);
+
             ConstruirTienda();
         }
 
@@ -52,16 +56,30 @@ namespace TiendaJuegos
 
         private void OnVerSteam(object? sender, RoutedEventArgs e) => MostrarSolo(PanelSteam, NavSteam);
 
-        private void MostrarSolo(Control panel, Button nav)
+        private void OnVerAdmin(object? sender, RoutedEventArgs e)
+        {
+            if (CmbJuego.ItemCount == 0)
+            {
+                List<string> nombres = new List<string>();
+                foreach (Juego j in Catalogo.Juegos) nombres.Add(j.Nombre);
+                CmbJuego.ItemsSource = nombres;
+                CmbJuego.SelectedIndex = 0;
+            }
+            MostrarSolo(PanelAdmin, NavAdmin);
+        }
+
+        private void MostrarSolo(Control panel, Button? nav)
         {
             PanelTienda.IsVisible = panel == PanelTienda;
+            PanelDetalle.IsVisible = panel == PanelDetalle;
             PanelBiblioteca.IsVisible = panel == PanelBiblioteca;
             PanelCanjear.IsVisible = panel == PanelCanjear;
             PanelSteam.IsVisible = panel == PanelSteam;
+            PanelAdmin.IsVisible = panel == PanelAdmin;
 
-            foreach (Button b in new[] { NavTienda, NavBiblioteca, NavCanjear, NavSteam })
+            foreach (Button b in new[] { NavTienda, NavBiblioteca, NavCanjear, NavSteam, NavAdmin })
                 b.Classes.Remove("activo");
-            nav.Classes.Add("activo");
+            nav?.Classes.Add("activo");
         }
 
         // ---------- Tienda ----------
@@ -94,7 +112,19 @@ namespace TiendaJuegos
             bool tiene = _biblioteca.TieneJuego(j.Nombre);
 
             StackPanel card = new StackPanel { Width = 200, Margin = new Thickness(0, 0, 18, 18), Spacing = 8 };
-            card.Children.Add(CrearPortada(j.Nombre, j.Genero, j.Color));
+
+            // La portada es un boton: al hacer clic se abre el detalle.
+            Button portada = new Button
+            {
+                Padding = new Thickness(0),
+                BorderThickness = new Thickness(0),
+                Background = Brushes.Transparent,
+                Cursor = new Cursor(StandardCursorType.Hand),
+                Content = CrearPortada(j.Nombre, j.Genero, j.Color),
+                Tag = j.Nombre
+            };
+            portada.Click += OnVerDetalle;
+            card.Children.Add(portada);
 
             Grid fila = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
             TextBlock precio = new TextBlock
@@ -128,6 +158,70 @@ namespace TiendaJuegos
             {
                 _biblioteca.Agregar(new JuegoLocal(juego, DateTime.Now, "(tienda)", false));
                 ConstruirTienda(TxtBuscar.Text ?? "");
+            }
+        }
+
+        // ---------- Detalle de un juego ----------
+
+        private void OnVerDetalle(object? sender, RoutedEventArgs e)
+        {
+            if (sender is Button b && b.Tag is string nombre)
+            {
+                Juego? j = Catalogo.Juegos.Find(g => g.Nombre == nombre);
+                if (j != null) ConstruirDetalle(j);
+            }
+        }
+
+        private void ConstruirDetalle(Juego j)
+        {
+            PanelDetalle.Children.Clear();
+
+            Button volver = new Button { Content = "← Volver a la tienda" };
+            volver.Classes.Add("secundario");
+            volver.Click += OnVerTienda;
+            PanelDetalle.Children.Add(volver);
+
+            Grid cuerpo = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), Margin = new Thickness(0, 8, 0, 0) };
+
+            Border portada = CrearPortada(j.Nombre, j.Genero, j.Color, 300, 400);
+            Grid.SetColumn(portada, 0);
+            cuerpo.Children.Add(portada);
+
+            StackPanel info = new StackPanel { Spacing = 14, Margin = new Thickness(28, 0, 0, 0) };
+            info.Children.Add(new TextBlock { Text = j.Nombre, FontSize = 32, FontWeight = FontWeight.Bold, Foreground = Colores.Texto });
+            info.Children.Add(new TextBlock { Text = "Genero: " + j.Genero, Foreground = Colores.TextoSuave, FontSize = 15 });
+            info.Children.Add(new TextBlock { Text = j.Descripcion, Foreground = Colores.B("#C6D4DF"), TextWrapping = TextWrapping.Wrap, FontSize = 15, MaxWidth = 520, HorizontalAlignment = HorizontalAlignment.Left });
+            info.Children.Add(new TextBlock { Text = j.Precio, Foreground = Colores.Precio, FontSize = 26, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 8, 0, 0) });
+
+            bool tiene = _biblioteca.TieneJuego(j.Nombre);
+            Button obtener = new Button
+            {
+                Content = tiene ? "Ya esta en tu biblioteca" : "Obtener juego",
+                IsEnabled = !tiene,
+                Tag = j.Nombre,
+                FontSize = 15,
+                Padding = new Thickness(26, 12)
+            };
+            obtener.Classes.Add(tiene ? "secundario" : "primario");
+            obtener.Click += OnObtenerDesdeDetalle;
+            info.Children.Add(obtener);
+
+            Grid.SetColumn(info, 1);
+            cuerpo.Children.Add(info);
+            PanelDetalle.Children.Add(cuerpo);
+
+            MostrarSolo(PanelDetalle, NavTienda);
+        }
+
+        private void OnObtenerDesdeDetalle(object? sender, RoutedEventArgs e)
+        {
+            if (sender is Button b && b.Tag is string nombre)
+            {
+                if (!_biblioteca.TieneJuego(nombre))
+                    _biblioteca.Agregar(new JuegoLocal(nombre, DateTime.Now, "(tienda)", false));
+
+                Juego? j = Catalogo.Juegos.Find(g => g.Nombre == nombre);
+                if (j != null) ConstruirDetalle(j); // refresca el boton a "ya esta en tu biblioteca"
             }
         }
 
@@ -251,6 +345,46 @@ namespace TiendaJuegos
             }
         }
 
+        // ---------- Admin: generar licencia ----------
+
+        private void OnGenerar(object? sender, RoutedEventArgs e)
+        {
+            string? producto = CmbJuego.SelectedItem as string;
+            string cliente = (TxtCliente.Text ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(producto))
+            {
+                TxtClaveGenerada.Text = "Elegi un juego.";
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(cliente))
+            {
+                TxtClaveGenerada.Text = "Ingresa el cliente.";
+                return;
+            }
+            if (!int.TryParse((TxtDias.Text ?? "0").Trim(), out int dias) || dias < 0)
+                dias = 0;
+
+            Licencia lic = _licencias.Emitir(producto, cliente, dias);
+            TxtClaveGenerada.Text = lic.Clave;
+            BtnCopiar.IsEnabled = true;
+        }
+
+        private async void OnCopiar(object? sender, RoutedEventArgs e)
+        {
+            string clave = TxtClaveGenerada.Text ?? "";
+            if (string.IsNullOrWhiteSpace(clave)) return;
+
+            TopLevel? top = TopLevel.GetTopLevel(this);
+            if (top?.Clipboard != null)
+            {
+                DataTransfer datos = new DataTransfer();
+                datos.Add(DataTransferItem.CreateText(clave));
+                await top.Clipboard.SetDataAsync(datos);
+                BtnCopiar.Content = "Copiado!";
+            }
+        }
+
         // ---------- Cerrar sesion ----------
 
         private void OnCerrarSesion(object? sender, RoutedEventArgs e)
@@ -264,7 +398,8 @@ namespace TiendaJuegos
 
         // ---------- Portada generada (sin imagenes externas) ----------
 
-        private static Border CrearPortada(string nombre, string genero, string colorHex)
+        private static Border CrearPortada(string nombre, string genero, string colorHex,
+                                           double ancho = 200, double alto = 240)
         {
             Color baseColor = Color.Parse(colorHex);
 
@@ -282,7 +417,7 @@ namespace TiendaJuegos
             {
                 Text = nombre,
                 Foreground = Brushes.White,
-                FontSize = 20,
+                FontSize = alto > 300 ? 28 : 20,
                 FontWeight = FontWeight.Bold,
                 TextWrapping = TextWrapping.Wrap,
                 TextAlignment = TextAlignment.Center,
@@ -313,8 +448,8 @@ namespace TiendaJuegos
 
             return new Border
             {
-                Width = 200,
-                Height = 240,
+                Width = ancho,
+                Height = alto,
                 CornerRadius = new CornerRadius(6),
                 ClipToBounds = true,
                 Background = degradado,
