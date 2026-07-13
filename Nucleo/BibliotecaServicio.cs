@@ -7,9 +7,21 @@ namespace Steam
 {
     // Biblioteca LOCAL: juegos activados canjeando una licencia valida dentro de esta app.
     // No tiene ninguna relacion con Steam; es la simulacion "genero clave -> canjeo -> aparece el juego".
-    internal class BibliotecaServicio
+    public class BibliotecaServicio
     {
-        private const string RUTA = "biblioteca_local.txt";
+        private readonly string RUTA;
+
+        // Sin argumentos: biblioteca unica (uso de consola).
+        public BibliotecaServicio() : this("local") { }
+
+        // Por usuario: cada cuenta tiene su propia biblioteca.
+        public BibliotecaServicio(string usuario)
+        {
+            string seguro = usuario.ToLowerInvariant();
+            foreach (char c in Path.GetInvalidFileNameChars())
+                seguro = seguro.Replace(c, '_');
+            RUTA = Rutas.EnDatos($"biblioteca_{seguro}.txt");
+        }
 
         public List<JuegoLocal> LeerTodos()
         {

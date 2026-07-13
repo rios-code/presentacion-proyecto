@@ -7,7 +7,7 @@ namespace Steam
     // Codificacion Base32 (RFC 4648, sin relleno).
     // Convierte bytes crudos en texto usando solo A-Z y 2-7:
     // asi la clave queda en mayusculas legibles, sin caracteres confusos, estilo codigo de juego.
-    internal static class Base32
+    public static class Base32
     {
         private const string ALFABETO = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 

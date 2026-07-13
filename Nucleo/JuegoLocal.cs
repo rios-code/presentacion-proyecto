@@ -4,7 +4,7 @@ namespace Steam
 {
     // Un juego activado en la biblioteca LOCAL del usuario (dentro de esta app, no en Steam).
     // Se obtiene canjeando una licencia valida.
-    internal class JuegoLocal
+    public class JuegoLocal
     {
         public string Nombre { get; set; }
         public DateTime FechaActivacion { get; set; }

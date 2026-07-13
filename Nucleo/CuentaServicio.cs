@@ -3,13 +3,13 @@ using System.IO;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
-namespace TiendaJuegos
+namespace Steam
 {
     // Registro e inicio de sesion.
     // Las contrasenas se guardan HASHEADAS con PBKDF2 + salt aleatorio, NUNCA en texto plano.
     public class CuentaServicio
     {
-        private const string RUTA = "cuentas.txt"; // formato por linea: usuario|salt|hash
+        private static readonly string RUTA = Rutas.EnDatos("cuentas.txt"); // por linea: usuario|salt|hash
         private const int ITERACIONES = 100_000;
 
         public bool ExisteUsuario(string usuario)

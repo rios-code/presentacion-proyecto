@@ -3,7 +3,7 @@ using System;
 namespace Steam
 {
     // Resultado de validar una clave: si es valida, el motivo y los datos que trae dentro.
-    internal class ResultadoValidacion
+    public class ResultadoValidacion
     {
         public bool Valida { get; }
         public string Mensaje { get; }

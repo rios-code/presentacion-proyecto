@@ -3,7 +3,7 @@ using System;
 namespace Steam
 {
     // Representa una licencia de activacion de un juego de Steam.
-    internal class Licencia
+    public class Licencia
     {
         public string Clave { get; set; }
         public string Producto { get; set; }

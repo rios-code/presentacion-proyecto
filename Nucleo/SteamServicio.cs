@@ -11,10 +11,10 @@ namespace Steam
     //  - Publico  : detalles y precio de cualquier juego de la tienda (no requiere clave).
     //  - Personal : tu biblioteca y tu perfil (requiere tu API key gratuita + tu SteamID64).
     // Nunca activa, compra ni genera juegos: eso no es posible por esta via.
-    internal class SteamServicio
+    public class SteamServicio
     {
-        // key|steamid  -> archivo local, excluido del repositorio.
-        private const string RUTA_CONFIG = "steam_config.txt";
+        // key|steamid  -> archivo en la carpeta de datos del usuario.
+        private static readonly string RUTA_CONFIG = Rutas.EnDatos("steam_config.txt");
 
         private static readonly HttpClient _http = new HttpClient
         {

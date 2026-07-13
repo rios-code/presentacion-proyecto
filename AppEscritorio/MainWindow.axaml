@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="TiendaJuegos.MainWindow"
-        Width="1000" Height="640"
+        Width="1000" Height="660"
         Title="MiTienda"
         WindowStartupLocation="CenterScreen"
         Background="#1B2838">
@@ -10,14 +10,18 @@
 
         <!-- Barra superior -->
         <Border Grid.Row="0" Background="#171A21" Padding="16,10">
-            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto">
                 <TextBlock Grid.Column="0" Text="MiTienda" FontSize="20" FontWeight="Bold"
                            Foreground="#66C0F4" VerticalAlignment="Center" Margin="0,0,24,0"/>
-                <Button Grid.Column="1" x:Name="BtnTienda" Content="TIENDA" Click="OnVerTienda"
+                <Button Grid.Column="1" Content="TIENDA" Click="OnVerTienda"
                         Background="Transparent" Foreground="#C6D4DF" FontWeight="Bold"/>
-                <Button Grid.Column="2" x:Name="BtnBiblioteca" Content="BIBLIOTECA" Click="OnVerBiblioteca"
+                <Button Grid.Column="2" Content="BIBLIOTECA" Click="OnVerBiblioteca"
                         Background="Transparent" Foreground="#C6D4DF" FontWeight="Bold" Margin="8,0,0,0"/>
-                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Button Grid.Column="3" Content="CANJEAR" Click="OnVerCanjear"
+                        Background="Transparent" Foreground="#C6D4DF" FontWeight="Bold" Margin="8,0,0,0"/>
+                <Button Grid.Column="4" Content="STEAM" Click="OnVerSteam"
+                        Background="Transparent" Foreground="#C6D4DF" FontWeight="Bold" Margin="8,0,0,0"/>
+                <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                     <TextBlock x:Name="LblUsuario" Foreground="#66C0F4" VerticalAlignment="Center"/>
                     <Button Content="Cerrar sesion" Click="OnCerrarSesion"
                             Background="#2A475E" Foreground="White"/>
@@ -28,8 +32,41 @@
         <!-- Contenido -->
         <ScrollViewer Grid.Row="1">
             <Panel Margin="24">
+
                 <StackPanel x:Name="PanelTienda" Spacing="10"/>
+
                 <StackPanel x:Name="PanelBiblioteca" Spacing="10" IsVisible="False"/>
+
+                <!-- Canjear licencia -->
+                <StackPanel x:Name="PanelCanjear" Spacing="12" IsVisible="False"
+                            MaxWidth="620" HorizontalAlignment="Left">
+                    <TextBlock Text="Canjear una clave de licencia" FontSize="24" FontWeight="Bold"
+                               Foreground="White"/>
+                    <TextBlock Text="Pega la clave que te entregaron. Se verifica su firma digital, vencimiento y revocacion."
+                               Foreground="#8F98A0" TextWrapping="Wrap"/>
+                    <TextBox x:Name="TxtClave" AcceptsReturn="True" MinHeight="90"
+                             TextWrapping="Wrap" PlaceholderText="XXXXX-XXXXX-XXXXX-..."/>
+                    <Button Content="Canjear" Click="OnCanjear"
+                            Background="#66C0F4" Foreground="#0E141B" FontWeight="Bold"
+                            Padding="18,8" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="LblCanje" TextWrapping="Wrap" Foreground="#C6D4DF"/>
+                </StackPanel>
+
+                <!-- Steam (API oficial, publico) -->
+                <StackPanel x:Name="PanelSteam" Spacing="12" IsVisible="False"
+                            MaxWidth="720" HorizontalAlignment="Left">
+                    <TextBlock Text="Steam - info de un juego" FontSize="24" FontWeight="Bold"
+                               Foreground="White"/>
+                    <TextBlock Text="Consulta la API publica de Steam. Ingresa el AppID (ej: 220 = Half-Life 2)."
+                               Foreground="#8F98A0" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox x:Name="TxtAppId" Width="180" PlaceholderText="AppID"/>
+                        <Button Content="Buscar" Click="OnBuscarSteam"
+                                Background="#66C0F4" Foreground="#0E141B" FontWeight="Bold" Padding="18,8"/>
+                    </StackPanel>
+                    <TextBlock x:Name="LblSteam" TextWrapping="Wrap" Foreground="#C6D4DF"/>
+                </StackPanel>
+
             </Panel>
         </ScrollViewer>
     </Grid>

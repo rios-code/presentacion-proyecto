@@ -16,11 +16,11 @@ namespace Steam
     //  - Sin la clave privada es imposible fabricar una clave que pase la validacion,
     //    y cualquier modificacion de los datos invalida la firma.
     //  - La clave es autosuficiente: lleva los datos + su firma dentro, se valida sin conexion.
-    internal class LicenciaServicio
+    public class LicenciaServicio
     {
-        private const string RUTA = "licencias.txt";
-        private const string RUTA_PRIVADA = "clave_privada.pem";
-        private const string RUTA_PUBLICA = "clave_publica.pem";
+        private static readonly string RUTA = Rutas.EnDatos("licencias.txt");
+        private static readonly string RUTA_PRIVADA = Rutas.EnDatos("clave_privada.pem");
+        private static readonly string RUTA_PUBLICA = Rutas.EnDatos("clave_publica.pem");
 
         // Separador interno de los campos firmados (Unit Separator, no aparece en texto normal).
         private const char SEP = (char)31;
