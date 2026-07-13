@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="Nucleo/Nucleo.csproj" />
   <Project Path="proyecto final/proyecto final.csproj" />
+  <Project Path="AppEscritorio/TiendaJuegos.csproj" />
 </Solution>

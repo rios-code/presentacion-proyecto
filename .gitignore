@@ -361,3 +361,19 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# ===== Sistema de licencias (archivos generados en ejecucion) =====
+# La clave PRIVADA jamas debe subirse al repositorio.
+clave_privada.pem
+clave_publica.pem
+licencias.txt
+tarjetas.txt
+
+# Credenciales de Steam (API key + SteamID) - NUNCA subir al repo
+steam_config.txt
+biblioteca_steam.csv
+licencias.csv
+biblioteca_local.txt
+
+# ===== App de escritorio (datos de usuario, no subir) =====
+cuentas.txt
+biblioteca_*.txt
