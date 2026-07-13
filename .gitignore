@@ -373,3 +373,7 @@ steam_config.txt
 biblioteca_steam.csv
 licencias.csv
 biblioteca_local.txt
+
+# ===== App de escritorio (datos de usuario, no subir) =====
+cuentas.txt
+biblioteca_*.txt

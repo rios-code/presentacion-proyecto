@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TiendaJuegos.MainWindow"
+        Width="1000" Height="640"
+        Title="MiTienda"
+        WindowStartupLocation="CenterScreen"
+        Background="#1B2838">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Barra superior -->
+        <Border Grid.Row="0" Background="#171A21" Padding="16,10">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+                <TextBlock Grid.Column="0" Text="MiTienda" FontSize="20" FontWeight="Bold"
+                           Foreground="#66C0F4" VerticalAlignment="Center" Margin="0,0,24,0"/>
+                <Button Grid.Column="1" x:Name="BtnTienda" Content="TIENDA" Click="OnVerTienda"
+                        Background="Transparent" Foreground="#C6D4DF" FontWeight="Bold"/>
+                <Button Grid.Column="2" x:Name="BtnBiblioteca" Content="BIBLIOTECA" Click="OnVerBiblioteca"
+                        Background="Transparent" Foreground="#C6D4DF" FontWeight="Bold" Margin="8,0,0,0"/>
+                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock x:Name="LblUsuario" Foreground="#66C0F4" VerticalAlignment="Center"/>
+                    <Button Content="Cerrar sesion" Click="OnCerrarSesion"
+                            Background="#2A475E" Foreground="White"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Contenido -->
+        <ScrollViewer Grid.Row="1">
+            <Panel Margin="24">
+                <StackPanel x:Name="PanelTienda" Spacing="10"/>
+                <StackPanel x:Name="PanelBiblioteca" Spacing="10" IsVisible="False"/>
+            </Panel>
+        </ScrollViewer>
+    </Grid>
+</Window>
