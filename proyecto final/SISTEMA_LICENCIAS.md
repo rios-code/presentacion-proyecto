@@ -22,7 +22,23 @@ Sistema de consola en C# que **genera y valida claves de activación** de juegos
 | `Base32.cs` | Codifica los bytes firmados como texto legible (A–Z, 2–7). |
 | `ResultadoValidacion.cs` | Resultado de validar: válida/ inválida + motivo + datos. |
 | `SteamServicio.cs` | Cliente de la **API oficial de Steam** (solo lectura). |
+| `JuegoLocal.cs` | Un juego activado en la biblioteca local (dentro de la app). |
+| `BibliotecaServicio.cs` | Biblioteca local: canje de licencias e instalación. |
 | `program.cs` | Menú de consola. |
+
+## Biblioteca local (canje de licencias)
+
+Simula el flujo **"genero clave → la canjeo → el juego aparece en mi biblioteca"**, pero
+todo dentro de la app (no toca Steam):
+
+- **Canjear una licencia:** el juego solo se desbloquea si la clave **pasa la validación
+  criptográfica** (firma válida, no vencida, no revocada). Una clave alterada o revocada
+  no agrega nada. Una misma licencia no puede canjearse dos veces.
+- **Ver mi biblioteca local:** lista los juegos activados y si están instalados.
+- **Instalar / desinstalar:** cambia el estado de un juego de la biblioteca.
+
+Esto demuestra el punto clave: la licencia es la *llave* que desbloquea el contenido, y la
+firma digital garantiza que solo las claves legítimas funcionan.
 
 ## Integración con Steam (API oficial de Valve)
 

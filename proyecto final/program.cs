@@ -108,6 +108,83 @@ namespace Steam
                 Console.WriteLine($"Exportadas {cantidad} licencias a '{ruta}'.");
         }
 
+        // ========== BIBLIOTECA LOCAL (canje de licencias) ==========
+
+        public static void CanjearLicencia(LicenciaServicio licencias, BibliotecaServicio biblioteca)
+        {
+            string clave = LeerTexto("Ingrese la clave a canjear: ");
+            ResultadoValidacion r = licencias.Validar(clave);
+
+            // El juego solo se desbloquea si la licencia pasa la validacion criptografica.
+            if (!r.Valida)
+            {
+                Console.WriteLine("[X] No se pudo canjear: " + r.Mensaje);
+                return;
+            }
+            if (biblioteca.ClaveYaCanjeada(clave))
+            {
+                Console.WriteLine("Esa licencia ya fue canjeada antes.");
+                return;
+            }
+            if (biblioteca.TieneJuego(r.Producto!))
+            {
+                Console.WriteLine($"'{r.Producto}' ya esta en tu biblioteca.");
+                return;
+            }
+
+            biblioteca.Agregar(new JuegoLocal(r.Producto!, DateTime.Now, clave, false));
+            Console.WriteLine($"[OK] '{r.Producto}' agregado a tu biblioteca. Listo para instalar.");
+        }
+
+        public static void VerBibliotecaLocal(BibliotecaServicio biblioteca)
+        {
+            List<JuegoLocal> lista = biblioteca.LeerTodos();
+            Console.WriteLine("\n===== MI BIBLIOTECA LOCAL =====");
+            if (lista.Count == 0)
+            {
+                Console.WriteLine("(vacia: canjea una licencia para agregar juegos)");
+                return;
+            }
+            int n = 1;
+            foreach (JuegoLocal j in lista)
+            {
+                Console.WriteLine($"{n}. {j}");
+                n++;
+            }
+        }
+
+        public static void InstalarDesinstalar(BibliotecaServicio biblioteca)
+        {
+            List<JuegoLocal> lista = biblioteca.LeerTodos();
+            if (lista.Count == 0)
+            {
+                Console.WriteLine("Tu biblioteca esta vacia. Canjea una licencia primero.");
+                return;
+            }
+
+            Console.WriteLine("\n===== INSTALAR / DESINSTALAR =====");
+            int n = 1;
+            foreach (JuegoLocal j in lista)
+            {
+                Console.WriteLine($"{n}. {j}");
+                n++;
+            }
+
+            int idx = LeerEnteroNoNegativo("Numero del juego (0 = cancelar): ");
+            if (idx <= 0 || idx > lista.Count)
+            {
+                Console.WriteLine("Cancelado.");
+                return;
+            }
+
+            JuegoLocal elegido = lista[idx - 1];
+            bool nuevoEstado = !elegido.Instalado;
+            biblioteca.CambiarInstalado(elegido.Nombre, nuevoEstado);
+            Console.WriteLine(nuevoEstado
+                ? $"'{elegido.Nombre}' instalado."
+                : $"'{elegido.Nombre}' desinstalado.");
+        }
+
         // ========== STEAM (API oficial) ==========
 
         public static async Task InfoJuego(SteamServicio steam)
@@ -191,6 +268,7 @@ namespace Steam
         public static async Task Operar()
         {
             LicenciaServicio licencias = new LicenciaServicio();
+            BibliotecaServicio biblioteca = new BibliotecaServicio();
             SteamServicio steam = new SteamServicio();
             int opcion = 0;
 
@@ -203,12 +281,16 @@ namespace Steam
                 Console.WriteLine("3. Listar licencias");
                 Console.WriteLine("4. Revocar licencia");
                 Console.WriteLine("5. Exportar licencias a CSV");
+                Console.WriteLine("--- Mi biblioteca local (canje) ---");
+                Console.WriteLine("6. Canjear una licencia (activar juego)");
+                Console.WriteLine("7. Ver mi biblioteca local");
+                Console.WriteLine("8. Instalar / desinstalar un juego");
                 Console.WriteLine("--- Steam (API oficial) ---");
-                Console.WriteLine("6. Ver info y precio de un juego     (publico)");
-                Console.WriteLine("7. Ver mi biblioteca de juegos       (mi cuenta)");
-                Console.WriteLine("8. Guardar mi biblioteca en archivo  (mi cuenta)");
-                Console.WriteLine("9. Ver mi perfil de Steam            (mi cuenta)");
-                Console.WriteLine("10. Salir");
+                Console.WriteLine("9. Ver info y precio de un juego      (publico)");
+                Console.WriteLine("10. Ver mi biblioteca de juegos       (mi cuenta)");
+                Console.WriteLine("11. Guardar mi biblioteca en archivo  (mi cuenta)");
+                Console.WriteLine("12. Ver mi perfil de Steam            (mi cuenta)");
+                Console.WriteLine("13. Salir");
                 Console.Write("Seleccione opcion: ");
 
                 if (int.TryParse(Console.ReadLine(), out opcion))
@@ -220,15 +302,18 @@ namespace Steam
                         case 3: ListarLicencias(licencias); break;
                         case 4: RevocarLicencia(licencias); break;
                         case 5: ExportarLicencias(licencias); break;
-                        case 6: await InfoJuego(steam); break;
-                        case 7: await MiBiblioteca(steam); break;
-                        case 8: await GuardarBiblioteca(steam); break;
-                        case 9: await MiPerfil(steam); break;
-                        case 10: Console.WriteLine("Cerrando el sistema..."); break;
+                        case 6: CanjearLicencia(licencias, biblioteca); break;
+                        case 7: VerBibliotecaLocal(biblioteca); break;
+                        case 8: InstalarDesinstalar(biblioteca); break;
+                        case 9: await InfoJuego(steam); break;
+                        case 10: await MiBiblioteca(steam); break;
+                        case 11: await GuardarBiblioteca(steam); break;
+                        case 12: await MiPerfil(steam); break;
+                        case 13: Console.WriteLine("Cerrando el sistema..."); break;
                         default: Console.WriteLine("Opcion no valida."); break;
                     }
                 }
-            } while (opcion != 10);
+            } while (opcion != 13);
         }
     }
 }
