@@ -1,34 +1,34 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="TiendaJuegos.RegisterWindow"
-        Width="420" Height="560"
+        Width="440" Height="600"
         Title="Crear cuenta"
         WindowStartupLocation="CenterOwner"
-        CanResize="False"
-        Background="#171A21">
+        CanResize="False">
 
-    <StackPanel Margin="40" Spacing="14" VerticalAlignment="Center">
-        <TextBlock Text="Crear cuenta" FontSize="28" FontWeight="Bold"
-                   Foreground="#66C0F4" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+    <Border Margin="36" CornerRadius="10" Background="#16202D"
+            BoxShadow="0 8 30 0 #60000000" VerticalAlignment="Center">
+        <StackPanel Margin="34,30" Spacing="14">
+            <TextBlock Text="Crear cuenta" FontSize="30" FontWeight="Bold"
+                       Foreground="#66C0F4" HorizontalAlignment="Center" Margin="0,0,0,10"/>
 
-        <TextBlock Text="Usuario" Foreground="#8F98A0"/>
-        <TextBox x:Name="TxtUsuario" PlaceholderText="Minimo 3 caracteres"/>
+            <TextBlock Text="Usuario" Foreground="#8F98A0"/>
+            <TextBox x:Name="TxtUsuario" PlaceholderText="Minimo 3 caracteres"/>
 
-        <TextBlock Text="Contrasena" Foreground="#8F98A0"/>
-        <TextBox x:Name="TxtPassword" PasswordChar="●" PlaceholderText="Minimo 6 caracteres"/>
+            <TextBlock Text="Contrasena" Foreground="#8F98A0"/>
+            <TextBox x:Name="TxtPassword" PasswordChar="●" PlaceholderText="Minimo 6 caracteres"/>
 
-        <TextBlock Text="Repetir contrasena" Foreground="#8F98A0"/>
-        <TextBox x:Name="TxtPassword2" PasswordChar="●" PlaceholderText="Repeti la contrasena"/>
+            <TextBlock Text="Repetir contrasena" Foreground="#8F98A0"/>
+            <TextBox x:Name="TxtPassword2" PasswordChar="●" PlaceholderText="Repeti la contrasena"/>
 
-        <Button x:Name="BtnCrear" Content="Crear cuenta" Click="OnCrear"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                Background="#5C7E10" Foreground="White" FontWeight="Bold"
-                Padding="12" Margin="0,10,0,0"/>
+            <Button x:Name="BtnCrear" Classes="exito" Content="Crear cuenta" Click="OnCrear"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,10,0,0"/>
 
-        <Button x:Name="BtnCancelar" Content="Cancelar" Click="OnCancelar"
-                HorizontalAlignment="Center" Background="Transparent" Foreground="#8F98A0"/>
+            <Button x:Name="BtnCancelar" Classes="enlace" Content="Cancelar" Click="OnCancelar"
+                    HorizontalAlignment="Center"/>
 
-        <TextBlock x:Name="LblMensaje" Foreground="#E74C3C" TextWrapping="Wrap"
-                   HorizontalAlignment="Center" TextAlignment="Center"/>
-    </StackPanel>
+            <TextBlock x:Name="LblMensaje" Foreground="#E74C3C" TextWrapping="Wrap"
+                       HorizontalAlignment="Center" TextAlignment="Center"/>
+        </StackPanel>
+    </Border>
 </Window>

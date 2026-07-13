@@ -4,7 +4,103 @@
              RequestedThemeVariant="Dark">
              <!-- Tema oscuro fijo, estilo Steam. -->
 
+    <Application.Resources>
+        <Color x:Key="ColFondo">#1B2838</Color>
+        <Color x:Key="ColFondoInf">#0E141B</Color>
+        <SolidColorBrush x:Key="Acento" Color="#66C0F4"/>
+        <SolidColorBrush x:Key="AcentoClaro" Color="#A7D8F5"/>
+        <SolidColorBrush x:Key="Verde" Color="#5C7E10"/>
+        <SolidColorBrush x:Key="VerdeClaro" Color="#8FB020"/>
+        <SolidColorBrush x:Key="Tarjeta" Color="#16202D"/>
+        <SolidColorBrush x:Key="TextoSuave" Color="#8F98A0"/>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
+
+        <!-- Fondo degradado en todas las ventanas -->
+        <Style Selector="Window">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                    <GradientStop Color="#1B2838" Offset="0"/>
+                    <GradientStop Color="#0E141B" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter>
+        </Style>
+
+        <!-- Cajas de texto -->
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#0E141B"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#2A475E"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
+        <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="#66C0F4"/>
+        </Style>
+
+        <!-- Boton primario (azul Steam) -->
+        <Style Selector="Button.primario">
+            <Setter Property="Background" Value="#66C0F4"/>
+            <Setter Property="Foreground" Value="#0E141B"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="18,9"/>
+            <Setter Property="CornerRadius" Value="3"/>
+        </Style>
+        <Style Selector="Button.primario:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#8FD0F7"/>
+            <Setter Property="Foreground" Value="#0E141B"/>
+        </Style>
+
+        <!-- Boton verde (accion positiva) -->
+        <Style Selector="Button.exito">
+            <Setter Property="Background" Value="#5C7E10"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="18,9"/>
+            <Setter Property="CornerRadius" Value="3"/>
+        </Style>
+        <Style Selector="Button.exito:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#7BA31C"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+
+        <!-- Boton secundario (gris azulado) -->
+        <Style Selector="Button.secundario">
+            <Setter Property="Background" Value="#2A475E"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="CornerRadius" Value="3"/>
+        </Style>
+        <Style Selector="Button.secundario:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#37597A"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+
+        <!-- Boton de navegacion (barra superior) -->
+        <Style Selector="Button.nav">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#C6D4DF"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="10,6"/>
+        </Style>
+        <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+        <Style Selector="Button.nav.activo">
+            <Setter Property="Foreground" Value="#66C0F4"/>
+        </Style>
+
+        <!-- Boton tipo enlace -->
+        <Style Selector="Button.enlace">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#66C0F4"/>
+        </Style>
+        <Style Selector="Button.enlace:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#A7D8F5"/>
+        </Style>
     </Application.Styles>
 </Application>

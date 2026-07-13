@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using Avalonia;
@@ -24,9 +25,10 @@ namespace TiendaJuegos
         {
             InitializeComponent();
             _usuario = usuario;
-            _biblioteca = new BibliotecaServicio(usuario); // biblioteca propia de esta cuenta
+            _biblioteca = new BibliotecaServicio(usuario);
 
             LblUsuario.Text = "\U0001F464 " + usuario;
+            LblTituloBiblioteca.Text = "Biblioteca de " + usuario;
             Title = $"MiTienda - {usuario}";
 
             ConstruirTienda();
@@ -36,68 +38,96 @@ namespace TiendaJuegos
 
         private void OnVerTienda(object? sender, RoutedEventArgs e)
         {
-            ConstruirTienda();
-            MostrarSolo(PanelTienda);
+            ConstruirTienda(TxtBuscar.Text ?? "");
+            MostrarSolo(PanelTienda, NavTienda);
         }
 
         private void OnVerBiblioteca(object? sender, RoutedEventArgs e)
         {
             ConstruirBiblioteca();
-            MostrarSolo(PanelBiblioteca);
+            MostrarSolo(PanelBiblioteca, NavBiblioteca);
         }
 
-        private void OnVerCanjear(object? sender, RoutedEventArgs e) => MostrarSolo(PanelCanjear);
+        private void OnVerCanjear(object? sender, RoutedEventArgs e) => MostrarSolo(PanelCanjear, NavCanjear);
 
-        private void OnVerSteam(object? sender, RoutedEventArgs e) => MostrarSolo(PanelSteam);
+        private void OnVerSteam(object? sender, RoutedEventArgs e) => MostrarSolo(PanelSteam, NavSteam);
 
-        private void MostrarSolo(Control panel)
+        private void MostrarSolo(Control panel, Button nav)
         {
             PanelTienda.IsVisible = panel == PanelTienda;
             PanelBiblioteca.IsVisible = panel == PanelBiblioteca;
             PanelCanjear.IsVisible = panel == PanelCanjear;
             PanelSteam.IsVisible = panel == PanelSteam;
+
+            foreach (Button b in new[] { NavTienda, NavBiblioteca, NavCanjear, NavSteam })
+                b.Classes.Remove("activo");
+            nav.Classes.Add("activo");
         }
 
         // ---------- Tienda ----------
 
-        private void ConstruirTienda()
-        {
-            PanelTienda.Children.Clear();
-            PanelTienda.Children.Add(Titulo("Tienda"));
+        private void OnBuscar(object? sender, TextChangedEventArgs e) => ConstruirTienda(TxtBuscar.Text ?? "");
 
+        private void ConstruirTienda(string filtro = "")
+        {
+            GridTienda.Children.Clear();
+            filtro = filtro.Trim().ToLowerInvariant();
+
+            int mostrados = 0;
             foreach (Juego j in Catalogo.Juegos)
             {
-                bool tiene = _biblioteca.TieneJuego(j.Nombre);
-
-                Grid grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto") };
-
-                grid.Children.Add(EnColumna(Texto(j.Nombre, "#FFFFFF", 16), 0));
-                grid.Children.Add(EnColumna(Texto(j.Precio, "#A4D007", 14, new Thickness(0, 0, 16, 0)), 1));
-
-                Button boton = new Button
-                {
-                    Content = tiene ? "En tu biblioteca" : "Obtener",
-                    IsEnabled = !tiene,
-                    Tag = j.Nombre,
-                    Background = Pincel("#66C0F4"),
-                    Foreground = Pincel("#0E141B"),
-                    FontWeight = FontWeight.Bold,
-                    Padding = new Thickness(16, 8)
-                };
-                boton.Click += OnObtener;
-                grid.Children.Add(EnColumna(boton, 2));
-
-                PanelTienda.Children.Add(Tarjeta(grid));
+                if (filtro.Length > 0 && !j.Nombre.ToLowerInvariant().Contains(filtro)) continue;
+                GridTienda.Children.Add(TarjetaTienda(j));
+                mostrados++;
             }
+
+            if (mostrados == 0)
+                GridTienda.Children.Add(new TextBlock
+                {
+                    Text = "No hay juegos que coincidan con la busqueda.",
+                    Foreground = Colores.TextoSuave
+                });
+        }
+
+        private Control TarjetaTienda(Juego j)
+        {
+            bool tiene = _biblioteca.TieneJuego(j.Nombre);
+
+            StackPanel card = new StackPanel { Width = 200, Margin = new Thickness(0, 0, 18, 18), Spacing = 8 };
+            card.Children.Add(CrearPortada(j.Nombre, j.Genero, j.Color));
+
+            Grid fila = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+            TextBlock precio = new TextBlock
+            {
+                Text = j.Precio,
+                Foreground = Colores.Precio,
+                FontWeight = FontWeight.Bold,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(precio, 0);
+
+            Button boton = new Button
+            {
+                Content = tiene ? "En biblioteca" : "Obtener",
+                Tag = j.Nombre,
+                IsEnabled = !tiene
+            };
+            boton.Classes.Add(tiene ? "secundario" : "primario");
+            boton.Click += OnObtener;
+            Grid.SetColumn(boton, 1);
+
+            fila.Children.Add(precio);
+            fila.Children.Add(boton);
+            card.Children.Add(fila);
+            return card;
         }
 
         private void OnObtener(object? sender, RoutedEventArgs e)
         {
             if (sender is Button b && b.Tag is string juego && !_biblioteca.TieneJuego(juego))
             {
-                // Juego gratuito/obtenido en la tienda (no proviene de una licencia).
-                _biblioteca.Agregar(new JuegoLocal(juego, System.DateTime.Now, "(tienda)", false));
-                ConstruirTienda();
+                _biblioteca.Agregar(new JuegoLocal(juego, DateTime.Now, "(tienda)", false));
+                ConstruirTienda(TxtBuscar.Text ?? "");
             }
         }
 
@@ -105,39 +135,52 @@ namespace TiendaJuegos
 
         private void ConstruirBiblioteca()
         {
-            PanelBiblioteca.Children.Clear();
-            PanelBiblioteca.Children.Add(Titulo("Biblioteca de " + _usuario));
-
+            GridBiblioteca.Children.Clear();
             List<JuegoLocal> juegos = _biblioteca.LeerTodos();
+
             if (juegos.Count == 0)
             {
-                PanelBiblioteca.Children.Add(Texto(
-                    "Tu biblioteca esta vacia. Consegui juegos en la Tienda o canjea una licencia.",
-                    "#8F98A0", 14));
+                GridBiblioteca.Children.Add(new TextBlock
+                {
+                    Text = "Tu biblioteca esta vacia. Consegui juegos en la Tienda o canjea una licencia.",
+                    Foreground = Colores.TextoSuave
+                });
                 return;
             }
 
             foreach (JuegoLocal j in juegos)
+                GridBiblioteca.Children.Add(TarjetaBiblioteca(j));
+        }
+
+        private Control TarjetaBiblioteca(JuegoLocal j)
+        {
+            Juego? enCatalogo = Catalogo.Juegos.Find(c =>
+                string.Equals(c.Nombre, j.Nombre, StringComparison.OrdinalIgnoreCase));
+            string color = enCatalogo?.Color ?? "#33587A";
+            string genero = enCatalogo?.Genero ?? "";
+
+            StackPanel card = new StackPanel { Width = 200, Margin = new Thickness(0, 0, 18, 18), Spacing = 8 };
+            card.Children.Add(CrearPortada(j.Nombre, genero, color));
+
+            Button accion = new Button
             {
-                Grid grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+                Content = j.Instalado ? "▶ Jugar" : "Instalar",
+                Tag = j.Nombre,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Center
+            };
+            accion.Classes.Add(j.Instalado ? "exito" : "secundario");
+            accion.Click += OnInstalarOJugar;
+            card.Children.Add(accion);
 
-                string estado = j.Instalado ? "  [INSTALADO]" : "";
-                grid.Children.Add(EnColumna(Texto(j.Nombre + estado, "#FFFFFF", 16), 0));
-
-                Button accion = new Button
-                {
-                    Content = j.Instalado ? "▶ Jugar" : "Instalar",
-                    Tag = j.Nombre,
-                    Background = Pincel(j.Instalado ? "#5C7E10" : "#2A475E"),
-                    Foreground = Pincel("#FFFFFF"),
-                    FontWeight = FontWeight.Bold,
-                    Padding = new Thickness(16, 8)
-                };
-                accion.Click += OnInstalarOJugar;
-                grid.Children.Add(EnColumna(accion, 1));
-
-                PanelBiblioteca.Children.Add(Tarjeta(grid));
-            }
+            card.Children.Add(new TextBlock
+            {
+                Text = j.Instalado ? "Instalado" : "No instalado",
+                Foreground = j.Instalado ? Colores.Ok : Colores.TextoSuave,
+                FontSize = 12,
+                HorizontalAlignment = HorizontalAlignment.Center
+            });
+            return card;
         }
 
         private void OnInstalarOJugar(object? sender, RoutedEventArgs e)
@@ -145,12 +188,12 @@ namespace TiendaJuegos
             if (sender is Button b && b.Tag is string juego)
             {
                 JuegoLocal? actual = _biblioteca.LeerTodos().Find(j =>
-                    string.Equals(j.Nombre, juego, System.StringComparison.OrdinalIgnoreCase));
+                    string.Equals(j.Nombre, juego, StringComparison.OrdinalIgnoreCase));
                 if (actual == null) return;
 
                 if (!actual.Instalado)
-                    _biblioteca.CambiarInstalado(juego, true); // "Instalar"
-                // Si ya esta instalado, "Jugar" no cambia estado (aca iria lanzar el juego).
+                    _biblioteca.CambiarInstalado(juego, true); // Instalar
+                // Si ya esta instalado, "Jugar" (aca iria el lanzamiento real del juego).
 
                 ConstruirBiblioteca();
             }
@@ -161,7 +204,7 @@ namespace TiendaJuegos
         private void OnCanjear(object? sender, RoutedEventArgs e)
         {
             string clave = TxtClave.Text ?? "";
-            LblCanje.Foreground = Pincel("#E74C3C");
+            LblCanje.Foreground = Colores.Error;
 
             ResultadoValidacion r = _licencias.Validar(clave);
             if (!r.Valida)
@@ -180,8 +223,8 @@ namespace TiendaJuegos
                 return;
             }
 
-            _biblioteca.Agregar(new JuegoLocal(r.Producto!, System.DateTime.Now, clave, false));
-            LblCanje.Foreground = Pincel("#A4D007");
+            _biblioteca.Agregar(new JuegoLocal(r.Producto!, DateTime.Now, clave, false));
+            LblCanje.Foreground = Colores.Ok;
             LblCanje.Text = $"Listo. '{r.Producto}' se agrego a tu biblioteca.";
             TxtClave.Text = "";
         }
@@ -219,49 +262,72 @@ namespace TiendaJuegos
             Close();
         }
 
-        // ---------- Ayudas de interfaz ----------
+        // ---------- Portada generada (sin imagenes externas) ----------
 
-        private static Control EnColumna(Control control, int columna)
+        private static Border CrearPortada(string nombre, string genero, string colorHex)
         {
-            Grid.SetColumn(control, columna);
-            return control;
-        }
+            Color baseColor = Color.Parse(colorHex);
 
-        private static Border Tarjeta(Control contenido)
-        {
+            LinearGradientBrush degradado = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative)
+            };
+            degradado.GradientStops.Add(new GradientStop(baseColor, 0));
+            degradado.GradientStops.Add(new GradientStop(Oscurecer(baseColor, 0.45), 1));
+
+            Grid contenido = new Grid { RowDefinitions = new RowDefinitions("*,Auto") };
+
+            TextBlock titulo = new TextBlock
+            {
+                Text = nombre,
+                Foreground = Brushes.White,
+                FontSize = 20,
+                FontWeight = FontWeight.Bold,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(14)
+            };
+            Grid.SetRow(titulo, 0);
+            contenido.Children.Add(titulo);
+
+            if (!string.IsNullOrWhiteSpace(genero))
+            {
+                Border franja = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromArgb(110, 0, 0, 0)),
+                    Padding = new Thickness(10, 5),
+                    Child = new TextBlock
+                    {
+                        Text = genero.ToUpperInvariant(),
+                        Foreground = Brushes.White,
+                        FontSize = 11,
+                        FontWeight = FontWeight.SemiBold
+                    }
+                };
+                Grid.SetRow(franja, 1);
+                contenido.Children.Add(franja);
+            }
+
             return new Border
             {
-                Background = Pincel("#16202D"),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(16),
+                Width = 200,
+                Height = 240,
+                CornerRadius = new CornerRadius(6),
+                ClipToBounds = true,
+                Background = degradado,
                 Child = contenido
             };
         }
 
-        private static TextBlock Titulo(string texto)
+        private static Color Oscurecer(Color c, double factor)
         {
-            return new TextBlock
-            {
-                Text = texto,
-                FontSize = 24,
-                FontWeight = FontWeight.Bold,
-                Foreground = Pincel("#FFFFFF"),
-                Margin = new Thickness(0, 0, 0, 10)
-            };
+            return Color.FromRgb(
+                (byte)(c.R * factor),
+                (byte)(c.G * factor),
+                (byte)(c.B * factor));
         }
-
-        private static TextBlock Texto(string texto, string hex, double tamano, Thickness? margen = null)
-        {
-            return new TextBlock
-            {
-                Text = texto,
-                Foreground = Pincel(hex),
-                FontSize = tamano,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = margen ?? new Thickness(0)
-            };
-        }
-
-        private static IBrush Pincel(string hex) => new SolidColorBrush(Color.Parse(hex));
     }
 }
