@@ -4,6 +4,7 @@ using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using Microsoft.Data.Sqlite;
 
 namespace Steam
 {
@@ -18,7 +19,6 @@ namespace Steam
     //  - La clave es autosuficiente: lleva los datos + su firma dentro, se valida sin conexion.
     public class LicenciaServicio
     {
-        private static readonly string RUTA = Rutas.EnDatos("licencias.txt");
         private static readonly string RUTA_PRIVADA = Rutas.EnDatos("clave_privada.pem");
         private static readonly string RUTA_PUBLICA = Rutas.EnDatos("clave_publica.pem");
 
@@ -155,18 +155,18 @@ namespace Steam
             return Actualizar(lic);
         }
 
-        // ---------- PERSISTENCIA (archivo de texto, un registro por linea) ----------
+        // ---------- PERSISTENCIA (base de datos SQLite) ----------
 
         public List<Licencia> LeerTodas()
         {
             List<Licencia> lista = new List<Licencia>();
-            if (!File.Exists(RUTA)) return lista;
-
-            foreach (string linea in File.ReadAllLines(RUTA))
-            {
-                Licencia? lic = Parsear(linea);
-                if (lic != null) lista.Add(lic);
-            }
+            using SqliteConnection con = BaseDatos.Abrir();
+            using SqliteCommand cmd = con.CreateCommand();
+            cmd.CommandText = @"SELECT clave,producto,cliente,fecha_emision,fecha_expiracion,activa
+                                FROM licencias ORDER BY rowid";
+            using SqliteDataReader rd = cmd.ExecuteReader();
+            while (rd.Read())
+                lista.Add(LeerFila(rd));
             return lista;
         }
 
@@ -182,30 +182,46 @@ namespace Steam
 
         private void Guardar(Licencia lic)
         {
-            File.AppendAllText(RUTA, Serializar(lic) + "\n");
+            using SqliteConnection con = BaseDatos.Abrir();
+            using SqliteCommand cmd = con.CreateCommand();
+            cmd.CommandText = @"INSERT OR REPLACE INTO licencias
+                (clave,producto,cliente,fecha_emision,fecha_expiracion,activa)
+                VALUES($k,$p,$c,$e,$x,$a)";
+            EnlazarLicencia(cmd, lic);
+            cmd.ExecuteNonQuery();
         }
 
         private bool Actualizar(Licencia lic)
         {
-            if (!File.Exists(RUTA)) return false;
-            string objetivo = Normalizar(lic.Clave);
+            using SqliteConnection con = BaseDatos.Abrir();
+            using SqliteCommand cmd = con.CreateCommand();
+            cmd.CommandText = @"UPDATE licencias SET producto=$p, cliente=$c,
+                fecha_emision=$e, fecha_expiracion=$x, activa=$a WHERE clave=$k";
+            EnlazarLicencia(cmd, lic);
+            return cmd.ExecuteNonQuery() > 0;
+        }
 
-            List<string> lineas = new List<string>(File.ReadAllLines(RUTA));
-            bool encontrada = false;
-            for (int i = 0; i < lineas.Count; i++)
-            {
-                Licencia? actual = Parsear(lineas[i]);
-                if (actual != null && Normalizar(actual.Clave) == objetivo)
-                {
-                    lineas[i] = Serializar(lic);
-                    encontrada = true;
-                    break;
-                }
-            }
+        private static void EnlazarLicencia(SqliteCommand cmd, Licencia l)
+        {
+            string expira = l.EsPermanente ? "PERMANENTE" : l.FechaExpiracion.ToString("yyyy-MM-dd");
+            cmd.Parameters.AddWithValue("$k", l.Clave);
+            cmd.Parameters.AddWithValue("$p", l.Producto);
+            cmd.Parameters.AddWithValue("$c", l.Cliente);
+            cmd.Parameters.AddWithValue("$e", l.FechaEmision.ToString("yyyy-MM-dd HH:mm:ss",
+                                                CultureInfo.InvariantCulture));
+            cmd.Parameters.AddWithValue("$x", expira);
+            cmd.Parameters.AddWithValue("$a", l.Activa ? 1 : 0);
+        }
 
-            if (!encontrada) return false;
-            File.WriteAllLines(RUTA, lineas);
-            return true;
+        private static Licencia LeerFila(SqliteDataReader rd)
+        {
+            DateTime emision = DateTime.ParseExact(rd.GetString(3), "yyyy-MM-dd HH:mm:ss",
+                                                   CultureInfo.InvariantCulture);
+            DateTime expira = rd.GetString(4) == "PERMANENTE"
+                ? Licencia.PERMANENTE
+                : DateTime.ParseExact(rd.GetString(4), "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            return new Licencia(rd.GetString(0), rd.GetString(1), rd.GetString(2),
+                                emision, expira, rd.GetInt32(5) == 1);
         }
 
         // ---------- Exportacion ----------
@@ -243,33 +259,6 @@ namespace Steam
         }
 
         // ---------- Auxiliares ----------
-
-        private static string Serializar(Licencia l)
-        {
-            string expira = l.EsPermanente ? "PERMANENTE" : l.FechaExpiracion.ToString("yyyy-MM-dd");
-            return string.Join("|",
-                l.Clave,
-                l.Producto,
-                l.Cliente,
-                l.FechaEmision.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                expira,
-                l.Activa ? "1" : "0");
-        }
-
-        private static Licencia? Parsear(string linea)
-        {
-            if (string.IsNullOrWhiteSpace(linea)) return null;
-            string[] p = linea.Split('|');
-            if (p.Length != 6) return null;
-
-            DateTime emision = DateTime.ParseExact(p[3], "yyyy-MM-dd HH:mm:ss",
-                                                   CultureInfo.InvariantCulture);
-            DateTime expira = p[4] == "PERMANENTE"
-                ? Licencia.PERMANENTE
-                : DateTime.ParseExact(p[4], "yyyy-MM-dd", CultureInfo.InvariantCulture);
-
-            return new Licencia(p[0], p[1], p[2], emision, expira, p[5] == "1");
-        }
 
         // Une los bytes en un solo bloque: [2 bytes con el largo del payload][payload][firma].
         private static byte[] Empaquetar(byte[] payload, byte[] firma)
