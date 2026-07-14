@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Renombrador.ActivacionWindow"
+        Width="480" Height="440"
+        Title="Activar Renombrador"
+        WindowStartupLocation="CenterScreen"
+        CanResize="False">
+
+    <Border Margin="30" CornerRadius="10" Background="#1B2430"
+            BoxShadow="0 8 30 0 #60000000" VerticalAlignment="Center">
+        <StackPanel Margin="30,28" Spacing="14">
+            <TextBlock Text="Renombrador Pro" FontSize="30" FontWeight="Bold"
+                       Foreground="#4C9AFF" HorizontalAlignment="Center"/>
+            <TextBlock Text="Ingresa tu clave de licencia para activar el programa."
+                       Foreground="#9BA7B4" HorizontalAlignment="Center" TextAlignment="Center"
+                       TextWrapping="Wrap"/>
+
+            <TextBox x:Name="TxtClave" AcceptsReturn="True" MinHeight="90" TextWrapping="Wrap"
+                     FontFamily="Consolas,monospace" PlaceholderText="XXXXX-XXXXX-XXXXX-..."/>
+
+            <Button Classes="primario" Content="Activar" Click="OnActivar"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+            <TextBlock x:Name="LblMensaje" TextWrapping="Wrap" HorizontalAlignment="Center"
+                       TextAlignment="Center" Foreground="#E5484D"/>
+
+            <TextBlock Text="¿No tenes clave? Compra una licencia para usar Renombrador."
+                       Foreground="#6b7684" FontSize="12" HorizontalAlignment="Center"
+                       TextAlignment="Center" TextWrapping="Wrap"/>
+        </StackPanel>
+    </Border>
+</Window>

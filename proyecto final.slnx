@@ -5,4 +5,5 @@
   <Project Path="LicenciaKit/LicenciaKit.csproj" />
   <Project Path="Herramientas/Generador/Generador.csproj" />
   <Project Path="Herramientas/AppProtegidaDemo/AppProtegidaDemo.csproj" />
+  <Project Path="Renombrador/Renombrador.csproj" />
 </Solution>
