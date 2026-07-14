@@ -8,87 +8,49 @@ using Microsoft.Data.Sqlite;
 
 namespace Steam
 {
-    // Servicio de licencias con FIRMA DIGITAL FUERTE (ECDSA sobre curva P-256).
+    // Rol CLIENTE / VALIDADOR: solo tiene la clave PUBLICA.
+    // Puede VALIDAR licencias (verificar firma, vencimiento y revocacion) y revocar,
+    // pero NO puede generar licencias: eso requiere la clave privada del emisor.
     //
-    // Como funciona la seguridad:
-    //  - Al iniciar se crea (una sola vez) un par de claves: privada y publica.
-    //  - Para EMITIR una licencia se firman los datos con la clave PRIVADA.
-    //  - Para VALIDAR se verifica la firma con la clave PUBLICA.
-    //  - Sin la clave privada es imposible fabricar una clave que pase la validacion,
-    //    y cualquier modificacion de los datos invalida la firma.
-    //  - La clave es autosuficiente: lleva los datos + su firma dentro, se valida sin conexion.
+    // Seguridad: sin la clave privada es imposible fabricar una clave que pase la validacion,
+    // y cualquier modificacion de los datos invalida la firma.
     public class LicenciaServicio
     {
-        private static readonly string RUTA_PRIVADA = Rutas.EnDatos("clave_privada.pem");
         private static readonly string RUTA_PUBLICA = Rutas.EnDatos("clave_publica.pem");
 
-        // Separador interno de los campos firmados (Unit Separator, no aparece en texto normal).
-        private const char SEP = (char)31;
+        private ECDsa? _ecdsa;
 
-        private readonly ECDsa _ecdsa;
-
-        public LicenciaServicio()
+        // Carga la clave publica cuando esta disponible (puede crearse despues, por el emisor).
+        private ECDsa? ObtenerClavePublica()
         {
-            _ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-            CargarOCrearClaves();
-        }
+            if (_ecdsa != null) return _ecdsa;
+            if (!File.Exists(RUTA_PUBLICA)) return null;
 
-        // Carga el par de claves del disco, o lo genera la primera vez.
-        private void CargarOCrearClaves()
-        {
-            if (File.Exists(RUTA_PRIVADA))
-            {
-                _ecdsa.ImportFromPem(File.ReadAllText(RUTA_PRIVADA));
-            }
-            else
-            {
-                File.WriteAllText(RUTA_PRIVADA, _ecdsa.ExportECPrivateKeyPem());
-                File.WriteAllText(RUTA_PUBLICA, _ecdsa.ExportSubjectPublicKeyInfoPem());
-            }
-        }
-
-        // ---------- EMISION ----------
-
-        public Licencia Emitir(string producto, string cliente, int diasValidez)
-        {
-            // Limpia caracteres que romperian el formato de almacenamiento/firma.
-            producto = Limpiar(producto);
-            cliente = Limpiar(cliente);
-
-            DateTime emision = DateTime.Now;
-            DateTime expira = diasValidez <= 0 ? Licencia.PERMANENTE : emision.Date.AddDays(diasValidez);
-
-            // 1) Datos a proteger.
-            string payloadTexto = $"{producto}{SEP}{cliente}{SEP}{expira:yyyy-MM-dd}";
-            byte[] payload = Encoding.UTF8.GetBytes(payloadTexto);
-
-            // 2) Firma digital de esos datos con la clave PRIVADA.
-            byte[] firma = _ecdsa.SignData(payload, HashAlgorithmName.SHA256);
-
-            // 3) Empaqueta datos + firma y lo convierte en una clave legible.
-            byte[] blob = Empaquetar(payload, firma);
-            string clave = FormatearEnBloques(Base32.Codificar(blob));
-
-            Licencia lic = new Licencia(clave, producto, cliente, emision, expira, true);
-            Guardar(lic);
-            return lic;
+            ECDsa e = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            e.ImportFromPem(File.ReadAllText(RUTA_PUBLICA));
+            _ecdsa = e;
+            return _ecdsa;
         }
 
         // ---------- VALIDACION ----------
 
         public ResultadoValidacion Validar(string claveIngresada)
         {
+            ECDsa? ecdsa = ObtenerClavePublica();
+            if (ecdsa == null)
+                return ResultadoValidacion.Fallida(
+                    "Falta la clave publica del emisor (todavia no se genero ninguna licencia).");
+
             byte[] blob;
             try
             {
-                blob = Base32.Decodificar(Normalizar(claveIngresada));
+                blob = Base32.Decodificar(FormatoClave.Normalizar(claveIngresada));
             }
             catch (FormatException ex)
             {
                 return ResultadoValidacion.Fallida("Formato de clave invalido: " + ex.Message);
             }
 
-            // Debe alcanzar al menos para el encabezado de longitud (2 bytes).
             if (blob.Length < 2)
                 return ResultadoValidacion.Fallida("Clave demasiado corta o corrupta.");
 
@@ -106,11 +68,11 @@ namespace Steam
             byte[] firma = new byte[largoFirma];
             Array.Copy(blob, 2 + largoPayload, firma, 0, largoFirma);
 
-            // 1) Verificacion criptografica: la firma corresponde a estos datos y a NUESTRA clave.
+            // 1) Verificacion criptografica con la clave PUBLICA.
             bool firmaOk;
             try
             {
-                firmaOk = _ecdsa.VerifyData(payload, firma, HashAlgorithmName.SHA256);
+                firmaOk = ecdsa.VerifyData(payload, firma, HashAlgorithmName.SHA256);
             }
             catch (CryptographicException)
             {
@@ -121,7 +83,7 @@ namespace Steam
                 return ResultadoValidacion.Fallida("FIRMA INVALIDA: clave falsificada o alterada.");
 
             // 2) Leer los datos firmados.
-            string[] partes = Encoding.UTF8.GetString(payload).Split(SEP);
+            string[] partes = Encoding.UTF8.GetString(payload).Split(FormatoClave.SEP);
             if (partes.Length != 3)
                 return ResultadoValidacion.Fallida("Contenido de la clave invalido.");
 
@@ -137,7 +99,7 @@ namespace Steam
             if (!permanente && expira.Date < DateTime.Now.Date)
                 return ResultadoValidacion.Fallida($"Licencia VENCIDA el {expira:yyyy-MM-dd}.");
 
-            // 4) Revocacion: aunque la firma sea valida, puede estar revocada en el registro local.
+            // 4) Revocacion: aunque la firma sea valida, puede estar revocada en el registro.
             Licencia? registro = Buscar(claveIngresada);
             if (registro != null && !registro.Activa)
                 return ResultadoValidacion.Fallida("Licencia REVOCADA por el emisor.");
@@ -172,23 +134,12 @@ namespace Steam
 
         public Licencia? Buscar(string claveIngresada)
         {
-            string objetivo = Normalizar(claveIngresada);
+            string objetivo = FormatoClave.Normalizar(claveIngresada);
             foreach (Licencia lic in LeerTodas())
             {
-                if (Normalizar(lic.Clave) == objetivo) return lic;
+                if (FormatoClave.Normalizar(lic.Clave) == objetivo) return lic;
             }
             return null;
-        }
-
-        private void Guardar(Licencia lic)
-        {
-            using SqliteConnection con = BaseDatos.Abrir();
-            using SqliteCommand cmd = con.CreateCommand();
-            cmd.CommandText = @"INSERT OR REPLACE INTO licencias
-                (clave,producto,cliente,fecha_emision,fecha_expiracion,activa)
-                VALUES($k,$p,$c,$e,$x,$a)";
-            EnlazarLicencia(cmd, lic);
-            cmd.ExecuteNonQuery();
         }
 
         private bool Actualizar(Licencia lic)
@@ -197,20 +148,15 @@ namespace Steam
             using SqliteCommand cmd = con.CreateCommand();
             cmd.CommandText = @"UPDATE licencias SET producto=$p, cliente=$c,
                 fecha_emision=$e, fecha_expiracion=$x, activa=$a WHERE clave=$k";
-            EnlazarLicencia(cmd, lic);
-            return cmd.ExecuteNonQuery() > 0;
-        }
-
-        private static void EnlazarLicencia(SqliteCommand cmd, Licencia l)
-        {
-            string expira = l.EsPermanente ? "PERMANENTE" : l.FechaExpiracion.ToString("yyyy-MM-dd");
-            cmd.Parameters.AddWithValue("$k", l.Clave);
-            cmd.Parameters.AddWithValue("$p", l.Producto);
-            cmd.Parameters.AddWithValue("$c", l.Cliente);
-            cmd.Parameters.AddWithValue("$e", l.FechaEmision.ToString("yyyy-MM-dd HH:mm:ss",
+            string expira = lic.EsPermanente ? "PERMANENTE" : lic.FechaExpiracion.ToString("yyyy-MM-dd");
+            cmd.Parameters.AddWithValue("$k", lic.Clave);
+            cmd.Parameters.AddWithValue("$p", lic.Producto);
+            cmd.Parameters.AddWithValue("$c", lic.Cliente);
+            cmd.Parameters.AddWithValue("$e", lic.FechaEmision.ToString("yyyy-MM-dd HH:mm:ss",
                                                 CultureInfo.InvariantCulture));
             cmd.Parameters.AddWithValue("$x", expira);
-            cmd.Parameters.AddWithValue("$a", l.Activa ? 1 : 0);
+            cmd.Parameters.AddWithValue("$a", lic.Activa ? 1 : 0);
+            return cmd.ExecuteNonQuery() > 0;
         }
 
         private static Licencia LeerFila(SqliteDataReader rd)
@@ -256,43 +202,6 @@ namespace Steam
         private static string Csv(string s)
         {
             return "\"" + s.Replace("\"", "\"\"") + "\"";
-        }
-
-        // ---------- Auxiliares ----------
-
-        // Une los bytes en un solo bloque: [2 bytes con el largo del payload][payload][firma].
-        private static byte[] Empaquetar(byte[] payload, byte[] firma)
-        {
-            byte[] blob = new byte[2 + payload.Length + firma.Length];
-            blob[0] = (byte)((payload.Length >> 8) & 0xFF);
-            blob[1] = (byte)(payload.Length & 0xFF);
-            Array.Copy(payload, 0, blob, 2, payload.Length);
-            Array.Copy(firma, 0, blob, 2 + payload.Length, firma.Length);
-            return blob;
-        }
-
-        // Inserta un guion cada 5 caracteres: ABCDE-FGHIJ-KLMNO-...
-        private static string FormatearEnBloques(string texto)
-        {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < texto.Length; i++)
-            {
-                if (i > 0 && i % 5 == 0) sb.Append('-');
-                sb.Append(texto[i]);
-            }
-            return sb.ToString();
-        }
-
-        // Quita guiones y espacios y pasa a mayusculas para comparar/decodificar.
-        private static string Normalizar(string clave)
-        {
-            return clave.Replace("-", "").Replace(" ", "").ToUpperInvariant();
-        }
-
-        // Evita que el texto rompa el separador de campos o el del archivo.
-        private static string Limpiar(string texto)
-        {
-            return texto.Replace("|", "/").Replace(SEP.ToString(), " ").Trim();
         }
     }
 }

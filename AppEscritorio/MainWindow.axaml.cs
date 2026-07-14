@@ -1,13 +1,16 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Net.Http;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Steam;
 
 namespace TiendaJuegos
@@ -16,8 +19,12 @@ namespace TiendaJuegos
     {
         private readonly string _usuario;
         private readonly BibliotecaServicio _biblioteca;
-        private readonly LicenciaServicio _licencias = new LicenciaServicio();
+        private readonly LicenciaServicio _licencias = new LicenciaServicio(); // validador (clave publica)
         private readonly SteamServicio _steam = new SteamServicio();
+
+        // El emisor (clave privada) se crea solo cuando el admin genera una licencia.
+        private EmisorServicio? _emisor;
+        private EmisorServicio Emisor => _emisor ??= new EmisorServicio();
 
         // Constructor sin parametros: solo para el disenador de Avalonia.
         public MainWindow() : this("invitado") { }
@@ -365,7 +372,7 @@ namespace TiendaJuegos
             if (!int.TryParse((TxtDias.Text ?? "0").Trim(), out int dias) || dias < 0)
                 dias = 0;
 
-            Licencia lic = _licencias.Emitir(producto, cliente, dias);
+            Licencia lic = Emisor.Emitir(producto, cliente, dias);
             TxtClaveGenerada.Text = lic.Clave;
             BtnCopiar.IsEnabled = true;
         }
@@ -396,55 +403,86 @@ namespace TiendaJuegos
             Close();
         }
 
-        // ---------- Portada generada (sin imagenes externas) ----------
+        // ---------- Portada del juego ----------
+        // Si existe una imagen propia en la carpeta de datos (covers/<juego>.png|jpg) la usa;
+        // si no, genera una portada abstracta (degradado + formas + inicial), estilo capsula de Steam.
 
         private static Border CrearPortada(string nombre, string genero, string colorHex,
                                            double ancho = 200, double alto = 240)
         {
             Color baseColor = Color.Parse(colorHex);
+            Panel capa = new Panel();
 
-            LinearGradientBrush degradado = new LinearGradientBrush
+            string? imagen = RutaImagen(nombre);
+            Bitmap? bmp = CargarBitmap(imagen);
+
+            IBrush fondo;
+            if (bmp != null)
+            {
+                capa.Children.Add(new Image { Source = bmp, Stretch = Stretch.UniformToFill });
+                fondo = Brushes.Black;
+            }
+            else
+            {
+                LinearGradientBrush degradado = new LinearGradientBrush
+                {
+                    StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                    EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative)
+                };
+                degradado.GradientStops.Add(new GradientStop(baseColor, 0));
+                degradado.GradientStops.Add(new GradientStop(Oscurecer(baseColor, 0.4), 1));
+                fondo = degradado;
+
+                // Formas abstractas para dar aspecto de arte.
+                Canvas deco = new Canvas();
+                deco.Children.Add(Circulo(ancho * 0.55, -alto * 0.12, ancho * 0.85, Color.FromArgb(28, 255, 255, 255)));
+                deco.Children.Add(Circulo(-ancho * 0.25, alto * 0.5, ancho * 0.75, Color.FromArgb(40, 0, 0, 0)));
+                capa.Children.Add(deco);
+
+                // Inicial del titulo como marca de agua grande.
+                capa.Children.Add(new TextBlock
+                {
+                    Text = Inicial(nombre),
+                    FontSize = alto * 0.55,
+                    FontWeight = FontWeight.Bold,
+                    Foreground = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255)),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                });
+            }
+
+            // Velo oscuro inferior + titulo (legible sobre cualquier fondo).
+            LinearGradientBrush velo = new LinearGradientBrush
             {
                 StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative)
+                EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative)
             };
-            degradado.GradientStops.Add(new GradientStop(baseColor, 0));
-            degradado.GradientStops.Add(new GradientStop(Oscurecer(baseColor, 0.45), 1));
+            velo.GradientStops.Add(new GradientStop(Color.FromArgb(0, 0, 0, 0), 0));
+            velo.GradientStops.Add(new GradientStop(Color.FromArgb(210, 0, 0, 0), 1));
 
-            Grid contenido = new Grid { RowDefinitions = new RowDefinitions("*,Auto") };
-
-            TextBlock titulo = new TextBlock
+            StackPanel textos = new StackPanel { Spacing = 2 };
+            textos.Children.Add(new TextBlock
             {
                 Text = nombre,
                 Foreground = Brushes.White,
-                FontSize = alto > 300 ? 28 : 20,
+                FontSize = alto > 300 ? 24 : 16,
                 FontWeight = FontWeight.Bold,
-                TextWrapping = TextWrapping.Wrap,
-                TextAlignment = TextAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(14)
-            };
-            Grid.SetRow(titulo, 0);
-            contenido.Children.Add(titulo);
-
+                TextWrapping = TextWrapping.Wrap
+            });
             if (!string.IsNullOrWhiteSpace(genero))
-            {
-                Border franja = new Border
+                textos.Children.Add(new TextBlock
                 {
-                    Background = new SolidColorBrush(Color.FromArgb(110, 0, 0, 0)),
-                    Padding = new Thickness(10, 5),
-                    Child = new TextBlock
-                    {
-                        Text = genero.ToUpperInvariant(),
-                        Foreground = Brushes.White,
-                        FontSize = 11,
-                        FontWeight = FontWeight.SemiBold
-                    }
-                };
-                Grid.SetRow(franja, 1);
-                contenido.Children.Add(franja);
-            }
+                    Text = genero.ToUpperInvariant(),
+                    Foreground = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
+                    FontSize = 10,
+                    FontWeight = FontWeight.SemiBold
+                });
+
+            Grid g = new Grid { RowDefinitions = new RowDefinitions("*,Auto") };
+            Border franja = new Border { Background = velo, Padding = new Thickness(12, 24, 12, 12), Child = textos };
+            Grid.SetRow(franja, 1);
+            g.Children.Add(franja);
+            capa.Children.Add(g);
 
             return new Border
             {
@@ -452,9 +490,48 @@ namespace TiendaJuegos
                 Height = alto,
                 CornerRadius = new CornerRadius(6),
                 ClipToBounds = true,
-                Background = degradado,
-                Child = contenido
+                Background = fondo,
+                Child = capa
             };
+        }
+
+        private static Ellipse Circulo(double x, double y, double diametro, Color color)
+        {
+            Ellipse el = new Ellipse
+            {
+                Width = diametro,
+                Height = diametro,
+                Fill = new SolidColorBrush(color)
+            };
+            Canvas.SetLeft(el, x);
+            Canvas.SetTop(el, y);
+            return el;
+        }
+
+        private static string Inicial(string nombre)
+        {
+            string t = nombre.Trim();
+            return t.Length == 0 ? "?" : t.Substring(0, 1).ToUpperInvariant();
+        }
+
+        // Busca una imagen propia para el juego en <datos>/covers/.
+        private static string? RutaImagen(string nombre)
+        {
+            string seguro = nombre.ToLowerInvariant();
+            foreach (char c in System.IO.Path.GetInvalidFileNameChars()) seguro = seguro.Replace(c, '_');
+            foreach (string ext in new[] { ".png", ".jpg", ".jpeg" })
+            {
+                string ruta = Rutas.EnDatos(System.IO.Path.Combine("covers", seguro + ext));
+                if (File.Exists(ruta)) return ruta;
+            }
+            return null;
+        }
+
+        private static Bitmap? CargarBitmap(string? ruta)
+        {
+            if (ruta == null) return null;
+            try { return new Bitmap(ruta); }
+            catch { return null; }
         }
 
         private static Color Oscurecer(Color c, double factor)

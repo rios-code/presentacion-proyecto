@@ -37,13 +37,13 @@ namespace Steam
 
         // ========== LICENCIAS (local, firma digital) ==========
 
-        public static void GenerarLicencia(LicenciaServicio servicio)
+        public static void GenerarLicencia(EmisorServicio emisor)
         {
             string producto = LeerTexto("Juego / producto de Steam: ");
             string cliente = LeerTexto("Cliente (nombre o cuenta): ");
             int dias = LeerEnteroNoNegativo("Dias de validez (0 = permanente): ");
 
-            Licencia lic = servicio.Emitir(producto, cliente, dias);
+            Licencia lic = emisor.Emitir(producto, cliente, dias);
 
             Console.WriteLine("\n===== LICENCIA GENERADA Y FIRMADA =====");
             Console.WriteLine(lic.ToString());
@@ -267,6 +267,7 @@ namespace Steam
 
         public static async Task Operar()
         {
+            EmisorServicio emisor = new EmisorServicio();
             LicenciaServicio licencias = new LicenciaServicio();
             BibliotecaServicio biblioteca = new BibliotecaServicio();
             SteamServicio steam = new SteamServicio();
@@ -297,7 +298,7 @@ namespace Steam
                 {
                     switch (opcion)
                     {
-                        case 1: GenerarLicencia(licencias); break;
+                        case 1: GenerarLicencia(emisor); break;
                         case 2: ValidarLicencia(licencias); break;
                         case 3: ListarLicencias(licencias); break;
                         case 4: RevocarLicencia(licencias); break;
