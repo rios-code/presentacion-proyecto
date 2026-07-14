@@ -2,4 +2,7 @@
   <Project Path="Nucleo/Nucleo.csproj" />
   <Project Path="proyecto final/proyecto final.csproj" />
   <Project Path="AppEscritorio/TiendaJuegos.csproj" />
+  <Project Path="LicenciaKit/LicenciaKit.csproj" />
+  <Project Path="Herramientas/Generador/Generador.csproj" />
+  <Project Path="Herramientas/AppProtegidaDemo/AppProtegidaDemo.csproj" />
 </Solution>

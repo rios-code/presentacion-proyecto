@@ -377,3 +377,9 @@ biblioteca_local.txt
 # ===== App de escritorio (datos de usuario, no subir) =====
 cuentas.txt
 biblioteca_*.txt
+
+# ===== LicenciaKit (claves y registros generados por las herramientas) =====
+# La clave PRIVADA jamas debe subirse.
+privada.pem
+publica.pem
+licencias_emitidas.csv

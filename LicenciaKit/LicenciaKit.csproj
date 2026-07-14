@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Metadatos por si se distribuye como paquete NuGet -->
+    <PackageId>LicenciaKit</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>rios-code</Authors>
+    <Description>Kit de licencias con firma digital ECDSA P-256 para proteger y vender software propio. Sin dependencias externas.</Description>
+    <PackageTags>licencia;license;drm;activacion;firma-digital</PackageTags>
+  </PropertyGroup>
+
+</Project>
