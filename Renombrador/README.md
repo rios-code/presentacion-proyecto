@@ -11,9 +11,17 @@ Renombra archivos en lote con reglas y **vista previa en vivo** antes de aplicar
 - Agregar prefijo y/o sufijo.
 - Numeración automática (con cantidad de dígitos y número inicial).
 - Pasar a MAYÚSCULAS o minúsculas.
+- **Renombrar por fecha de la foto (EXIF)** — ideal para fotógrafos (ej: `2026-03-15_14-30-05.jpg`).
+- **Reemplazar espacios** por otro carácter (ej: `_`).
 - **Filtrar por extensión** (ej: solo `jpg, png`).
 - **Deshacer**: revierte el último renombrado con un clic (seguridad total).
 - Nunca sobrescribe archivos: avisa si hay nombres repetidos.
+
+## Modo prueba y licencia
+
+Sin licencia, la app funciona en **modo prueba**: renombra hasta 10 archivos por vez. Con una
+clave válida (botón *Activar*) se desbloquea sin límite. Esto ayuda a que la gente **pruebe
+antes de comprar**.
 
 Ejemplo: `IMG_0021.jpg` → `viaje_IMG_0021_001.jpg`
 

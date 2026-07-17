@@ -8,10 +8,19 @@
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="24">
 
         <!-- Titulo -->
-        <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,16">
+        <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
             <TextBlock Text="Renombrador Pro" FontSize="26" FontWeight="Bold" Foreground="#4C9AFF"/>
             <TextBlock Text="Renombra muchos archivos a la vez con reglas y vista previa."
                        Foreground="#9BA7B4"/>
+            <Border x:Name="BannerPrueba" IsVisible="False" Background="#3A2E12" CornerRadius="4"
+                    Padding="12,8" BorderBrush="#7A5C1E" BorderThickness="1">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" VerticalAlignment="Center" TextWrapping="Wrap"
+                               Foreground="#F0C674"
+                               Text="Modo PRUEBA: podes renombrar hasta 10 archivos por vez. Activa una licencia para desbloquear todo."/>
+                    <Button Grid.Column="1" Classes="primario" Content="Activar" Click="OnActivar" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
         </StackPanel>
 
         <!-- Carpeta -->
@@ -54,6 +63,17 @@
                         <ComboBoxItem>MAYUSCULAS</ComboBoxItem>
                         <ComboBoxItem>minusculas</ComboBoxItem>
                     </ComboBox>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,Auto,Auto,*">
+                    <CheckBox Grid.Column="0" x:Name="ChkEspacios" Content="Reemplazar espacios por"
+                              Foreground="#E6ECF2" IsCheckedChanged="OnCambio" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" x:Name="TxtEspacioPor" Text="_" Width="60" Margin="8,0,0,0" TextChanged="OnCambio"/>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,Auto,*">
+                    <CheckBox Grid.Column="0" x:Name="ChkFecha" Content="Renombrar por fecha de foto (EXIF)"
+                              Foreground="#E6ECF2" IsCheckedChanged="OnCambio" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" x:Name="TxtFormatoFecha" Text="yyyy-MM-dd_HH-mm-ss"
+                             Width="200" Margin="12,0,0,0" TextChanged="OnCambio"/>
                 </Grid>
             </StackPanel>
         </Border>

@@ -31,7 +31,7 @@ namespace Renombrador
 
         private void AbrirPrincipal()
         {
-            MainWindow principal = new MainWindow();
+            MainWindow principal = new MainWindow(true);
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 desktop.MainWindow = principal;
             principal.Show();

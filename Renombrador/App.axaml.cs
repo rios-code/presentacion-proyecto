@@ -16,11 +16,10 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Si ya hay una licencia guardada y valida, entra directo; si no, pide activacion.
+            // Entra siempre a la app: con licencia valida queda completa, si no en modo prueba.
             ResultadoValidacion? estado = GestorLicencia.EstadoGuardado();
-            desktop.MainWindow = (estado != null && estado.EsValida)
-                ? new MainWindow()
-                : new ActivacionWindow();
+            bool licenciado = estado != null && estado.EsValida;
+            desktop.MainWindow = new MainWindow(licenciado);
         }
 
         base.OnFrameworkInitializationCompleted();
