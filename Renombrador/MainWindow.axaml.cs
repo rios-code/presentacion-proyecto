@@ -12,6 +12,7 @@ namespace Renombrador
     public partial class MainWindow : Window
     {
         private readonly List<string> _archivos = new List<string>();
+        private readonly List<(string origen, string destino)> _ultimaOperacion = new List<(string, string)>();
         private bool _iniciado;
 
         public MainWindow()
@@ -48,10 +49,23 @@ namespace Renombrador
                 return;
             }
 
+            HashSet<string> filtro = ExtensionesFiltro();
             foreach (string f in Directory.GetFiles(ruta))
-                _archivos.Add(f);
+                if (filtro.Count == 0 || filtro.Contains(Path.GetExtension(f)))
+                    _archivos.Add(f);
 
             ActualizarPreview();
+        }
+
+        // Extensiones a incluir (vacio = todas). Acepta "jpg, png" o ".jpg .png".
+        private HashSet<string> ExtensionesFiltro()
+        {
+            HashSet<string> set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            string txt = (TxtExtensiones.Text ?? "").Trim();
+            if (txt.Length == 0) return set;
+            foreach (string e in txt.Split(new[] { ',', ' ', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                set.Add(e.StartsWith(".") ? e : "." + e);
+            return set;
         }
 
         // ---------- Vista previa ----------
@@ -59,6 +73,12 @@ namespace Renombrador
         private void OnCambio(object? sender, RoutedEventArgs e)
         {
             if (_iniciado) ActualizarPreview();
+        }
+
+        // Cambiar el filtro de extensiones requiere releer la carpeta.
+        private void OnFiltroExtension(object? sender, RoutedEventArgs e)
+        {
+            if (_iniciado) CargarCarpeta();
         }
 
         private ReglaRenombrado ReglaActual()
@@ -141,6 +161,7 @@ namespace Renombrador
             }
 
             int hechos = 0, saltados = 0;
+            _ultimaOperacion.Clear();
             foreach ((string origen, string destino) in mapa)
             {
                 if (string.Equals(origen, destino, StringComparison.Ordinal)) continue;
@@ -148,6 +169,7 @@ namespace Renombrador
                 {
                     if (File.Exists(destino)) { saltados++; continue; } // nunca sobrescribe
                     File.Move(origen, destino);
+                    _ultimaOperacion.Add((origen, destino)); // para poder deshacer
                     hechos++;
                 }
                 catch { saltados++; }
@@ -155,7 +177,41 @@ namespace Renombrador
 
             CargarCarpeta();
             LblEstado.Text = $"Renombrados {hechos}." +
-                             (saltados > 0 ? $" Saltados {saltados} (ya existian o dieron error)." : "");
+                             (saltados > 0 ? $" Saltados {saltados} (ya existian o dieron error)." : "") +
+                             (hechos > 0 ? " Podes deshacer." : "");
+        }
+
+        // ---------- Deshacer ----------
+
+        private void OnDeshacer(object? sender, RoutedEventArgs e)
+        {
+            if (_ultimaOperacion.Count == 0)
+            {
+                LblEstado.Text = "No hay nada para deshacer.";
+                return;
+            }
+
+            int hechos = 0, saltados = 0;
+            // Al reves: cada archivo vuelve a su nombre original.
+            for (int i = _ultimaOperacion.Count - 1; i >= 0; i--)
+            {
+                (string origen, string destino) = _ultimaOperacion[i];
+                try
+                {
+                    if (File.Exists(destino) && !File.Exists(origen))
+                    {
+                        File.Move(destino, origen);
+                        hechos++;
+                    }
+                    else saltados++;
+                }
+                catch { saltados++; }
+            }
+
+            _ultimaOperacion.Clear();
+            CargarCarpeta();
+            LblEstado.Text = $"Deshecho: {hechos} archivo(s) volvieron a su nombre anterior." +
+                             (saltados > 0 ? $" ({saltados} no se pudieron)." : "");
         }
 
         // ---------- Auxiliar de interfaz ----------

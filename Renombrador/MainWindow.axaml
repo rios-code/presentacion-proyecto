@@ -24,6 +24,11 @@
         <!-- Opciones -->
         <Border Grid.Row="2" Background="#1B2430" CornerRadius="6" Padding="16" Margin="0,0,0,14">
             <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="Solo extensiones (ej: jpg, png - vacio = todas):"
+                               Foreground="#9BA7B4" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Grid.Column="1" x:Name="TxtExtensiones" TextChanged="OnFiltroExtension"/>
+                </Grid>
                 <Grid ColumnDefinitions="Auto,*,Auto,*">
                     <TextBlock Grid.Column="0" Text="Buscar:" Foreground="#9BA7B4" VerticalAlignment="Center" Margin="0,0,8,0"/>
                     <TextBox Grid.Column="1" x:Name="TxtBuscar" TextChanged="OnCambio"/>
@@ -61,9 +66,10 @@
         </Border>
 
         <!-- Footer -->
-        <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+        <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto" Margin="0,14,0,0">
             <TextBlock Grid.Column="0" x:Name="LblEstado" Foreground="#9BA7B4" VerticalAlignment="Center"/>
-            <Button Grid.Column="1" Classes="exito" Content="Aplicar renombrado" Click="OnAplicar"/>
+            <Button Grid.Column="1" Classes="secundario" Content="Deshacer" Click="OnDeshacer" Margin="0,0,8,0"/>
+            <Button Grid.Column="2" Classes="exito" Content="Aplicar renombrado" Click="OnAplicar"/>
         </Grid>
     </Grid>
 </Window>

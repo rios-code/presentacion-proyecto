@@ -11,6 +11,8 @@ Renombra archivos en lote con reglas y **vista previa en vivo** antes de aplicar
 - Agregar prefijo y/o sufijo.
 - Numeración automática (con cantidad de dígitos y número inicial).
 - Pasar a MAYÚSCULAS o minúsculas.
+- **Filtrar por extensión** (ej: solo `jpg, png`).
+- **Deshacer**: revierte el último renombrado con un clic (seguridad total).
 - Nunca sobrescribe archivos: avisa si hay nombres repetidos.
 
 Ejemplo: `IMG_0021.jpg` → `viaje_IMG_0021_001.jpg`
@@ -33,7 +35,9 @@ dotnet run
    Guardá `privada.pem` en un lugar seguro (¡nunca la compartas!).
 2. **Pegá tu clave pública** en `GestorLicencia.cs`, en la constante `CLAVE_PUBLICA`
    (reemplazá la que viene de ejemplo).
-3. **Compilá y distribuí** el `.exe` (`dotnet publish -c Release`).
+3. **Generá el `.exe`**: ejecutá `bash publicar.sh` (o `publicar.bat` en Windows). Crea UN
+   solo archivo (`bin/Release/net10.0/win-x64/publish/Renombrador.exe`) con todo incluido:
+   tus clientes hacen doble clic, **no necesitan instalar .NET ni nada**.
 4. **Vendé** la app (tu web, redes, marketplaces) y cobrá con Stripe, Mercado Pago, etc.
 5. Cuando alguien paga, generás su clave con el `Generador` y se la enviás.
 
