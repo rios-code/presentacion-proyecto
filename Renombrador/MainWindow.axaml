@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Renombrador.MainWindow"
+        Width="900" Height="660"
+        Title="Renombrador Pro"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="24">
+
+        <!-- Titulo -->
+        <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+            <TextBlock Text="Renombrador Pro" FontSize="26" FontWeight="Bold" Foreground="#4C9AFF"/>
+            <TextBlock Text="Renombra muchos archivos a la vez con reglas y vista previa."
+                       Foreground="#9BA7B4"/>
+            <Border x:Name="BannerPrueba" IsVisible="False" Background="#3A2E12" CornerRadius="4"
+                    Padding="12,8" BorderBrush="#7A5C1E" BorderThickness="1">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" VerticalAlignment="Center" TextWrapping="Wrap"
+                               Foreground="#F0C674"
+                               Text="Modo PRUEBA: podes renombrar hasta 10 archivos por vez. Activa una licencia para desbloquear todo."/>
+                    <Button Grid.Column="1" Classes="primario" Content="Activar" Click="OnActivar" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </StackPanel>
+
+        <!-- Carpeta -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,14">
+            <TextBox Grid.Column="0" x:Name="TxtCarpeta" PlaceholderText="Ruta de la carpeta con los archivos..."/>
+            <Button Grid.Column="1" Classes="secundario" Content="Examinar" Click="OnExaminar" Margin="8,0,0,0"/>
+            <Button Grid.Column="2" Classes="primario" Content="Cargar" Click="OnCargar" Margin="8,0,0,0"/>
+        </Grid>
+
+        <!-- Opciones -->
+        <Border Grid.Row="2" Background="#1B2430" CornerRadius="6" Padding="16" Margin="0,0,0,14">
+            <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Grid.Column="0" Text="Solo extensiones (ej: jpg, png - vacio = todas):"
+                               Foreground="#9BA7B4" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Grid.Column="1" x:Name="TxtExtensiones" TextChanged="OnFiltroExtension"/>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*,Auto,*">
+                    <TextBlock Grid.Column="0" Text="Buscar:" Foreground="#9BA7B4" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Grid.Column="1" x:Name="TxtBuscar" TextChanged="OnCambio"/>
+                    <TextBlock Grid.Column="2" Text="Reemplazar por:" Foreground="#9BA7B4" VerticalAlignment="Center" Margin="16,0,8,0"/>
+                    <TextBox Grid.Column="3" x:Name="TxtReemplazar" TextChanged="OnCambio"/>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*,Auto,*">
+                    <TextBlock Grid.Column="0" Text="Prefijo:" Foreground="#9BA7B4" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Grid.Column="1" x:Name="TxtPrefijo" TextChanged="OnCambio"/>
+                    <TextBlock Grid.Column="2" Text="Sufijo:" Foreground="#9BA7B4" VerticalAlignment="Center" Margin="16,0,8,0"/>
+                    <TextBox Grid.Column="3" x:Name="TxtSufijo" TextChanged="OnCambio"/>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto,Auto">
+                    <CheckBox Grid.Column="0" x:Name="ChkNumerar" Content="Numerar" Foreground="#E6ECF2"
+                              IsCheckedChanged="OnCambio" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="desde:" Foreground="#9BA7B4" VerticalAlignment="Center" Margin="10,0,6,0"/>
+                    <TextBox Grid.Column="2" x:Name="TxtDesde" Text="1" Width="60" TextChanged="OnCambio"/>
+                    <TextBlock Grid.Column="3" Text="digitos:" Foreground="#9BA7B4" VerticalAlignment="Center" Margin="12,0,6,0"/>
+                    <TextBox Grid.Column="4" x:Name="TxtDigitos" Text="2" Width="60" TextChanged="OnCambio"/>
+                    <TextBlock Grid.Column="6" Text="Mayus/minus:" Foreground="#9BA7B4" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox Grid.Column="7" x:Name="CmbCaso" SelectedIndex="0" SelectionChanged="OnCambio" Width="150">
+                        <ComboBoxItem>Sin cambio</ComboBoxItem>
+                        <ComboBoxItem>MAYUSCULAS</ComboBoxItem>
+                        <ComboBoxItem>minusculas</ComboBoxItem>
+                    </ComboBox>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,Auto,Auto,*">
+                    <CheckBox Grid.Column="0" x:Name="ChkEspacios" Content="Reemplazar espacios por"
+                              Foreground="#E6ECF2" IsCheckedChanged="OnCambio" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" x:Name="TxtEspacioPor" Text="_" Width="60" Margin="8,0,0,0" TextChanged="OnCambio"/>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,Auto,*">
+                    <CheckBox Grid.Column="0" x:Name="ChkFecha" Content="Renombrar por fecha de foto (EXIF)"
+                              Foreground="#E6ECF2" IsCheckedChanged="OnCambio" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1" x:Name="TxtFormatoFecha" Text="yyyy-MM-dd_HH-mm-ss"
+                             Width="200" Margin="12,0,0,0" TextChanged="OnCambio"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Vista previa -->
+        <Border Grid.Row="3" Background="#151B23" CornerRadius="6" Padding="8">
+            <ScrollViewer>
+                <StackPanel x:Name="PanelLista" Spacing="2" Margin="8"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Footer -->
+        <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto" Margin="0,14,0,0">
+            <TextBlock Grid.Column="0" x:Name="LblEstado" Foreground="#9BA7B4" VerticalAlignment="Center"/>
+            <Button Grid.Column="1" Classes="secundario" Content="Deshacer" Click="OnDeshacer" Margin="0,0,8,0"/>
+            <Button Grid.Column="2" Classes="exito" Content="Aplicar renombrado" Click="OnAplicar"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,15 +1,15 @@
 using System;
-using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using Microsoft.Data.Sqlite;
 
 namespace Steam
 {
-    // Biblioteca LOCAL: juegos activados canjeando una licencia valida dentro de esta app.
-    // No tiene ninguna relacion con Steam; es la simulacion "genero clave -> canjeo -> aparece el juego".
+    // Biblioteca de juegos de un usuario (persistida en SQLite).
+    // Cada cuenta tiene su propia biblioteca; los juegos se obtienen en la tienda o canjeando licencias.
     public class BibliotecaServicio
     {
-        private readonly string RUTA;
+        private readonly string _usuario;
 
         // Sin argumentos: biblioteca unica (uso de consola).
         public BibliotecaServicio() : this("local") { }
@@ -17,21 +17,24 @@ namespace Steam
         // Por usuario: cada cuenta tiene su propia biblioteca.
         public BibliotecaServicio(string usuario)
         {
-            string seguro = usuario.ToLowerInvariant();
-            foreach (char c in Path.GetInvalidFileNameChars())
-                seguro = seguro.Replace(c, '_');
-            RUTA = Rutas.EnDatos($"biblioteca_{seguro}.txt");
+            _usuario = usuario.Trim();
         }
 
         public List<JuegoLocal> LeerTodos()
         {
             List<JuegoLocal> lista = new List<JuegoLocal>();
-            if (!File.Exists(RUTA)) return lista;
+            using SqliteConnection con = BaseDatos.Abrir();
+            using SqliteCommand cmd = con.CreateCommand();
+            cmd.CommandText = @"SELECT nombre, fecha_activacion, clave_usada, instalado
+                                FROM biblioteca WHERE usuario = $u ORDER BY rowid";
+            cmd.Parameters.AddWithValue("$u", _usuario);
 
-            foreach (string linea in File.ReadAllLines(RUTA))
+            using SqliteDataReader rd = cmd.ExecuteReader();
+            while (rd.Read())
             {
-                JuegoLocal? j = Parsear(linea);
-                if (j != null) lista.Add(j);
+                DateTime fecha = DateTime.ParseExact(rd.GetString(1), "yyyy-MM-dd HH:mm:ss",
+                                                     CultureInfo.InvariantCulture);
+                lista.Add(new JuegoLocal(rd.GetString(0), fecha, rd.GetString(2), rd.GetInt32(3) == 1));
             }
             return lista;
         }
@@ -47,58 +50,40 @@ namespace Steam
 
         public bool TieneJuego(string nombre)
         {
-            foreach (JuegoLocal j in LeerTodos())
-                if (string.Equals(j.Nombre, nombre, StringComparison.OrdinalIgnoreCase)) return true;
-            return false;
+            using SqliteConnection con = BaseDatos.Abrir();
+            using SqliteCommand cmd = con.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM biblioteca WHERE usuario = $u AND nombre = $n";
+            cmd.Parameters.AddWithValue("$u", _usuario);
+            cmd.Parameters.AddWithValue("$n", nombre);
+            return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
         }
 
         public void Agregar(JuegoLocal juego)
         {
-            File.AppendAllText(RUTA, Serializar(juego) + "\n");
+            using SqliteConnection con = BaseDatos.Abrir();
+            using SqliteCommand cmd = con.CreateCommand();
+            cmd.CommandText = @"INSERT OR IGNORE INTO biblioteca
+                (usuario,nombre,fecha_activacion,clave_usada,instalado)
+                VALUES($u,$n,$f,$c,$i)";
+            cmd.Parameters.AddWithValue("$u", _usuario);
+            cmd.Parameters.AddWithValue("$n", juego.Nombre);
+            cmd.Parameters.AddWithValue("$f", juego.FechaActivacion.ToString("yyyy-MM-dd HH:mm:ss",
+                                                CultureInfo.InvariantCulture));
+            cmd.Parameters.AddWithValue("$c", juego.ClaveUsada);
+            cmd.Parameters.AddWithValue("$i", juego.Instalado ? 1 : 0);
+            cmd.ExecuteNonQuery();
         }
 
         // Cambia el estado instalado/no instalado de un juego (por nombre).
         public bool CambiarInstalado(string nombre, bool instalado)
         {
-            if (!File.Exists(RUTA)) return false;
-
-            List<JuegoLocal> lista = LeerTodos();
-            bool encontrado = false;
-            foreach (JuegoLocal j in lista)
-            {
-                if (string.Equals(j.Nombre, nombre, StringComparison.OrdinalIgnoreCase))
-                {
-                    j.Instalado = instalado;
-                    encontrado = true;
-                }
-            }
-            if (!encontrado) return false;
-
-            List<string> lineas = new List<string>();
-            foreach (JuegoLocal j in lista) lineas.Add(Serializar(j));
-            File.WriteAllLines(RUTA, lineas);
-            return true;
-        }
-
-        // ---------- Auxiliares ----------
-
-        private static string Serializar(JuegoLocal j)
-        {
-            return string.Join("|",
-                j.Nombre,
-                j.FechaActivacion.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                j.ClaveUsada,
-                j.Instalado ? "1" : "0");
-        }
-
-        private static JuegoLocal? Parsear(string linea)
-        {
-            if (string.IsNullOrWhiteSpace(linea)) return null;
-            string[] p = linea.Split('|');
-            if (p.Length != 4) return null;
-
-            DateTime fecha = DateTime.ParseExact(p[1], "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-            return new JuegoLocal(p[0], fecha, p[2], p[3] == "1");
+            using SqliteConnection con = BaseDatos.Abrir();
+            using SqliteCommand cmd = con.CreateCommand();
+            cmd.CommandText = "UPDATE biblioteca SET instalado = $i WHERE usuario = $u AND nombre = $n";
+            cmd.Parameters.AddWithValue("$i", instalado ? 1 : 0);
+            cmd.Parameters.AddWithValue("$u", _usuario);
+            cmd.Parameters.AddWithValue("$n", nombre);
+            return cmd.ExecuteNonQuery() > 0;
         }
 
         private static string Normalizar(string clave)

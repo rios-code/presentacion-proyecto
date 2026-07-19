@@ -1,0 +1,64 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Renombrador.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <Style Selector="Window">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                    <GradientStop Color="#1E2530" Offset="0"/>
+                    <GradientStop Color="#12161C" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter>
+        </Style>
+
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#12161C"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#2E3A47"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="8,6"/>
+        </Style>
+        <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="#4C9AFF"/>
+        </Style>
+
+        <Style Selector="Button.primario">
+            <Setter Property="Background" Value="#4C9AFF"/>
+            <Setter Property="Foreground" Value="#0B1220"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="18,9"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.primario:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#7DB8FF"/>
+            <Setter Property="Foreground" Value="#0B1220"/>
+        </Style>
+
+        <Style Selector="Button.exito">
+            <Setter Property="Background" Value="#37B24D"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="18,9"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.exito:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#48c95f"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+
+        <Style Selector="Button.secundario">
+            <Setter Property="Background" Value="#2E3A47"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.secundario:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#3c4b5b"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+        </Style>
+    </Application.Styles>
+</Application>
